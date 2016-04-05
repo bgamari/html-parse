@@ -145,13 +145,15 @@ beforeAttrValue tag attrs name = do
 -- | 8.2.4.38: Attribute value (double-quoted) state
 attrValueDQuoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueDQuoted tag attrs name = do
-    value <- takeTill (/= '"')
+    value <- takeWhile (/= '"')
+    char '"'
     afterAttrValueQuoted tag attrs name value
 
 -- | 8.2.4.39: Attribute value (single-quoted) state
 attrValueSQuoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueSQuoted tag attrs name = do
-    value <- takeTill (/= '\'')
+    value <- takeWhile (/= '\'')
+    char '\''
     afterAttrValueQuoted tag attrs name value
 
 -- | 8.2.4.40: Attribute value (unquoted) state
