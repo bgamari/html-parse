@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 
-module Parser
+module Text.HTML.Parser
     ( Token(..)
     , Attr(..)
     , token

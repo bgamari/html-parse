@@ -16,8 +16,20 @@ cabal-version:       >=1.10
 library
   exposed-modules:     Text.HTML.Parser
   other-extensions:    OverloadedStrings, DeriveGeneric
-  build-depends:       base >=4.8 && <4.9
-                       deepseq >=1.4 && <1.5
-                       attoparsec >=0.13 && <0.14
+  build-depends:       base >=4.8 && <4.9,
+                       deepseq >=1.4 && <1.5,
+                       attoparsec >=0.13 && <0.14,
                        text >=1.2 && <1.3
+  default-language:    Haskell2010
+
+benchmark bench
+  type:                exitcode-stdio-1.0
+  main-is:             Benchmark.hs
+  other-extensions:    OverloadedStrings, DeriveGeneric
+  build-depends:       base >=4.8 && <4.9,
+                       deepseq >=1.4 && <1.5,
+                       attoparsec >=0.13 && <0.14,
+                       text >=1.2 && <1.3,
+                       tagsoup >= 0.13,
+                       criterion >= 1.1
   default-language:    Haskell2010
