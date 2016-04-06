@@ -7,7 +7,6 @@ import qualified Text.HTML.Parser as Me
 main :: IO ()
 main = do
     t <- TIO.readFile "test.html"
-    s <- readFile "test.html"
     defaultMain
         [ bgroup "Forced"
             [ bench "fast parse Text" $ nf (Soup.parseTagsOptions Soup.parseOptionsFast) t
