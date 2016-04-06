@@ -182,6 +182,7 @@ markupDeclOpen =
   where
     comment = string "--" >> commentStart
     docType = do
+        -- switching this to asciiCI slowed things down by a factor of two
         s <- take 7
         guard $ T.toLower s == "doctype"
         doctype
