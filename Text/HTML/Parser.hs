@@ -2,7 +2,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 
 module Text.HTML.Parser
-    ( Token(..)
+    ( TagName, AttrName, AttrValue
+    , Token(..)
     , Attr(..)
     , token
     , tagStream
