@@ -38,8 +38,6 @@ data Token
   | ContentText !Text
   -- | Contents of a comment.
   | Comment !Builder
-  -- | Two tokens (sometimes useful for implementation reasons)
-  | Pair !Token !Token
   -- | Doctype
   | Doctype !Text
   deriving (Show, Ord, Eq, Generic)
