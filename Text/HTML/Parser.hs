@@ -167,7 +167,7 @@ afterAttrValueQuoted :: TagName -> [Attr] -> AttrName -> AttrValue -> Parser Tok
 afterAttrValueQuoted tag attrs name value =
           (satisfy (inClass "\x09\x0a\x0c ") >> beforeAttrName tag attrs')
       <|> (char '/' >> selfClosingStartTag tag attrs')
-      <|> (char '>' >> return (TagOpen name attrs'))
+      <|> (char '>' >> return (TagOpen tag attrs'))
   where attrs' = Attr name value : attrs
 
 -- | 8.2.4.45: Markup declaration open state
