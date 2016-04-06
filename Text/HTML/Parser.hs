@@ -222,7 +222,10 @@ commentEnd content = do
 -- | 8.2.4.52: DOCTYPE state
 -- FIXME
 doctype :: Parser Token
-doctype = Doctype <$> takeTill (=='>')
+doctype = do
+    content <- takeTill (=='>')
+    char '>'
+    return $ Doctype content
 
 -- | 8.2.4.44: Bogus comment state
 bogusComment :: Parser Token
