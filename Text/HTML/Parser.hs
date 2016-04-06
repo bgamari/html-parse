@@ -30,7 +30,7 @@ type AttrValue = Text
 
 data Token
   -- | An opening tag. Attribute ordering is arbitrary
-  = TagOpen !TagName ![Attr]
+  = TagOpen !TagName [Attr]
   -- | A closing tag.
   | TagClose !TagName
   -- | A text between tags.
