@@ -17,7 +17,7 @@ import Data.Monoid
 import Control.Monad (guard)
 import Control.DeepSeq
 
-import Data.Attoparsec.Text hiding (takeWhile)
+import Data.Attoparsec.Text
 import qualified Data.Attoparsec.Text as A
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -42,8 +42,6 @@ data Token
   -- | Doctype
   | Doctype !Text
   deriving (Show, Ord, Eq, Generic)
-
-takeWhile = A.takeWhile'
 
 data Attr = Attr !AttrName !AttrValue
           deriving (Show, Eq, Ord)
