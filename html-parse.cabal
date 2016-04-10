@@ -1,7 +1,14 @@
 name:                html-parse
 version:             0.1.0.0
--- synopsis:            
--- description:         
+synopsis:            A high-performance HTML tokenizer
+description:
+    This package provides a fast and reasonably robust HTML5 tokenizer built
+    upon the @attoparsec@ library. The parsing strategy is based upon the HTML5
+    parsing specification with few deviations.
+    .
+    The package targets similar use-cases to the venerable @tagsoup@ library,
+    but is signficantly more efficient, achieving parsing speeds of over 30
+    megabytes per second.
 homepage:            http://github.com/bgamari/html-parse
 license:             BSD3
 license-file:        LICENSE
