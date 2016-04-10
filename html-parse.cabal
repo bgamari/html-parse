@@ -7,7 +7,7 @@ description:
     parsing specification with few deviations.
     .
     The package targets similar use-cases to the venerable @tagsoup@ library,
-    but is signficantly more efficient, achieving parsing speeds of over 30
+    but is signficantly more efficient, achieving parsing speeds of over 50
     megabytes per second.
 homepage:            http://github.com/bgamari/html-parse
 license:             BSD3
