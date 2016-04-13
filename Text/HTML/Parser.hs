@@ -6,11 +6,13 @@
 -- so it behaves reasonable well on ill-formed documents from the open Web.
 --
 module Text.HTML.Parser
-    ( TagName, AttrName, AttrValue
-    , Token(..)
-    , Attr(..)
-    , token
+    ( -- * Parsing
+      token
     , tagStream
+      -- * Types
+    , Token(..)
+    , TagName, AttrName, AttrValue
+    , Attr(..)
     ) where
 
 import Data.Char hiding (isSpace)
@@ -28,8 +30,13 @@ import Data.Text.Lazy.Builder (Builder)
 import qualified Data.Text.Lazy.Builder as B
 import Prelude hiding (take, takeWhile)
 
+-- | A tag name (e.g. @body@)
 type TagName   = Text
+
+-- | An attribute name (e.g. @href@)
 type AttrName  = Text
+
+-- | The value of an attribute
 type AttrValue = Text
 
 -- | An HTML token
