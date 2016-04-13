@@ -11,12 +11,12 @@ main = do
         [ bgroup "Forced"
             [ bench "tagsoup fast Text" $ nf (Soup.parseTagsOptions Soup.parseOptionsFast) t
             , bench "tagsoup normal Text" $ nf (Soup.parseTagsOptions Soup.parseOptions) t
-            , bench "html-parser" $ nf Me.tagStream t
+            , bench "html-parser" $ nf Me.parseTokens t
             ]
         , bgroup "length"
             [ bench "tagsoup fast Text" $ whnf (length . Soup.parseTagsOptions Soup.parseOptionsFast) t
             , bench "tagsoup normal Text" $ whnf (length . Soup.parseTagsOptions Soup.parseOptions) t
-            , bench "html-parser" $ whnf (length . Me.tagStream) t
+            , bench "html-parser" $ whnf (length . Me.parseTokens) t
             ]
         ]
 

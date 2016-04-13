@@ -7,8 +7,8 @@
 --
 module Text.HTML.Parser
     ( -- * Parsing
-      token
-    , tagStream
+      parseTokens
+    , token
       -- * Types
     , Token(..)
     , TagName, AttrName, AttrValue
@@ -41,13 +41,14 @@ type AttrValue = Text
 
 -- | An HTML token
 data Token
-  -- | An opening tag. Attribute ordering is arbitrary
+  -- | An opening tag. Attribute ordering is arbitrary.
   = TagOpen !TagName [Attr]
   -- | A closing tag.
   | TagClose !TagName
   -- | The content between tags.
-  | ContentChar !Char
   | ContentText !Text
+  -- | A single character of content
+  | ContentChar !Char
   -- | Contents of a comment.
   | Comment !Builder
   -- | Doctype
@@ -245,9 +246,9 @@ doctype = do
 bogusComment :: Parser Token
 bogusComment = fail "Bogus comment"
 
--- | Produce a lazy list of tokens.
-tagStream :: Text -> [Token]
-tagStream = unfoldr f
+-- | Parse a lazy list of tokens.
+parseTokens :: Text -> [Token]
+parseTokens = unfoldr f
   where
     f :: Text -> Maybe (Token, Text)
     f t
