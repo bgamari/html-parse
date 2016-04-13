@@ -29,12 +29,13 @@ type TagName   = Text
 type AttrName  = Text
 type AttrValue = Text
 
+-- | An HTML token
 data Token
   -- | An opening tag. Attribute ordering is arbitrary
   = TagOpen !TagName [Attr]
   -- | A closing tag.
   | TagClose !TagName
-  -- | A text between tags.
+  -- | The content between tags.
   | ContentChar !Char
   | ContentText !Text
   -- | Contents of a comment.
@@ -43,6 +44,7 @@ data Token
   | Doctype !Text
   deriving (Show, Ord, Eq, Generic)
 
+-- | An attribute of a tag
 data Attr = Attr !AttrName !AttrValue
           deriving (Show, Eq, Ord)
 
