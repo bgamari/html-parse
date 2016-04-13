@@ -8,7 +8,7 @@ description:
     .
     The package targets similar use-cases to the venerable @tagsoup@ library,
     but is significantly more efficient, achieving parsing speeds of over 50
-    megabytes per second.
+    megabytes per second on modern hardware with and typical web documents.
 homepage:            http://github.com/bgamari/html-parse
 license:             BSD3
 license-file:        LICENSE
