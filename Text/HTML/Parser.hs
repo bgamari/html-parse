@@ -1,6 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 
+-- | This is a performance-oriented HTML tokenizer aim at web-crawling
+-- applications. It follows the HTML5 parsing specification quite closely,
+-- so it behaves reasonable well on ill-formed documents from the open Web.
+--
 module Text.HTML.Parser
     ( TagName, AttrName, AttrValue
     , Token(..)
@@ -51,11 +55,11 @@ instance NFData Token where
     rnf (Comment b) = rnf $ B.toLazyText b
     rnf _           = ()
 
--- | Start in the data state.
+-- | Parse a single 'Token'.
 token :: Parser Token
-token = dataState
+token = dataState -- Start in the data state.
 
--- | 8.2.4.1: Data state
+-- | /§8.2.4.1/: Data state
 dataState :: Parser Token
 dataState = do
     content <- takeWhile (/= '<')
@@ -63,7 +67,7 @@ dataState = do
       then return $ ContentText content
       else char '<' >> tagOpen
 
--- | 8.2.4.3: Tag open state
+-- | /§8.2.4.3/: Tag open state
 tagOpen :: Parser Token
 tagOpen =
         (char '!' >> markupDeclOpen)
@@ -80,7 +84,7 @@ tagOpen =
     other = do
         return $ ContentChar '<'
 
--- | 8.2.4.9: End tag open state
+-- | /§8.2.4.9/: End tag open state
 -- TODO: This isn't right
 endTagOpen :: Parser Token
 endTagOpen = do
@@ -88,7 +92,7 @@ endTagOpen = do
     char '>'
     return $ TagClose name
 
--- | 8.2.4.10: Tag name state
+-- | /§8.2.4.10/: Tag name state
 --
 -- deviation: no lower-casing
 tagName :: Parser Token
@@ -98,13 +102,13 @@ tagName = do
       <|> (char '/' >> selfClosingStartTag tag [])
       <|> (char '>' >> return (TagOpen tag []))
 
--- | 8.2.4.43: Self-closing start tag state
+-- | /§8.2.4.43/: Self-closing start tag state
 selfClosingStartTag :: TagName -> [Attr] -> Parser Token
 selfClosingStartTag tag attrs = do
         (char '>' >> return (TagOpen tag attrs))
     <|> beforeAttrName tag attrs
 
--- | 8.2.4.34: Before attribute name state
+-- | /§8.2.4.34/: Before attribute name state
 --
 -- deviation: no lower-casing
 beforeAttrName :: TagName -> [Attr] -> Parser Token
@@ -115,7 +119,7 @@ beforeAttrName tag attrs = do
       -- <|> (char '\x00' >> attrName tag attrs) -- TODO: NULL
       <|> attrName tag attrs
 
--- | 8.2.4.35: Attribute name state
+-- | /§8.2.4.35/: Attribute name state
 attrName :: TagName -> [Attr] -> Parser Token
 attrName tag attrs = do
     name <- takeWhile $ notInClass "\x09\x0a\x0c /=>\x00"
@@ -125,7 +129,7 @@ attrName tag attrs = do
       <|> (char '>' >> return (TagOpen tag (Attr name T.empty : attrs)))
       -- <|> -- TODO: NULL
 
--- | 8.2.4.36: After attribute name state
+-- | /§8.2.4.36/: After attribute name state
 afterAttrName :: TagName -> [Attr] -> AttrName -> Parser Token
 afterAttrName tag attrs name = do
     skipWhile $ inClass "\x09\x0a\x0c "
@@ -134,7 +138,7 @@ afterAttrName tag attrs name = do
       <|> (char '>' >> return (TagOpen tag (Attr name T.empty : attrs)))
       <|> attrName tag (Attr name T.empty : attrs)  -- not exactly sure this is right
 
--- | 8.2.4.37: Before attribute value state
+-- | /§8.2.4.37/: Before attribute value state
 beforeAttrValue :: TagName -> [Attr] -> AttrName -> Parser Token
 beforeAttrValue tag attrs name = do
     skipWhile $ inClass "\x09\x0a\x0c "
@@ -143,28 +147,28 @@ beforeAttrValue tag attrs name = do
       <|> (char '>' >> return (TagOpen tag (Attr name T.empty : attrs)))
       <|> attrValueUnquoted tag attrs name
 
--- | 8.2.4.38: Attribute value (double-quoted) state
+-- | /§8.2.4.38/: Attribute value (double-quoted) state
 attrValueDQuoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueDQuoted tag attrs name = do
     value <- takeWhile (/= '"')
     char '"'
     afterAttrValueQuoted tag attrs name value
 
--- | 8.2.4.39: Attribute value (single-quoted) state
+-- | /§8.2.4.39/: Attribute value (single-quoted) state
 attrValueSQuoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueSQuoted tag attrs name = do
     value <- takeWhile (/= '\'')
     char '\''
     afterAttrValueQuoted tag attrs name value
 
--- | 8.2.4.40: Attribute value (unquoted) state
+-- | /§8.2.4.40/: Attribute value (unquoted) state
 attrValueUnquoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueUnquoted tag attrs name = do
     value <- takeTill (inClass "\x09\x0a\x0c >")
     id $  (satisfy (inClass "\x09\x0a\x0c ") >> beforeAttrName tag attrs) -- unsure: don't emit?
       <|> (char '>' >> return (TagOpen tag (Attr name value : attrs)))
 
--- | 8.2.4.42: After attribute value (quoted) state
+-- | /§8.2.4.42/: After attribute value (quoted) state
 afterAttrValueQuoted :: TagName -> [Attr] -> AttrName -> AttrValue -> Parser Token
 afterAttrValueQuoted tag attrs name value =
           (satisfy (inClass "\x09\x0a\x0c ") >> beforeAttrName tag attrs')
@@ -172,7 +176,7 @@ afterAttrValueQuoted tag attrs name value =
       <|> (char '>' >> return (TagOpen tag attrs'))
   where attrs' = Attr name value : attrs
 
--- | 8.2.4.45: Markup declaration open state
+-- | /§8.2.4.45/: Markup declaration open state
 markupDeclOpen :: Parser Token
 markupDeclOpen =
         try comment
@@ -186,13 +190,13 @@ markupDeclOpen =
         guard $ T.toLower s == "doctype"
         doctype
 
--- | 8.2.4.46: Comment start state
+-- | /§8.2.4.46/: Comment start state
 commentStart :: Parser Token
 commentStart = do
           (char '-' >> commentStartDash)
       <|> (char '>' >> return (Comment mempty))
 
--- | 8.2.4.47: Comment start dash state
+-- | /§8.2.4.47/: Comment start dash state
 commentStartDash :: Parser Token
 commentStartDash =
           (char '-' >> commentEnd mempty)
@@ -200,21 +204,21 @@ commentStartDash =
       <|> (do c <- anyChar
               comment (B.singleton '-' <> B.singleton c) )
 
--- | 8.2.4.48: Comment state
+-- | /§8.2.4.48/: Comment state
 comment :: Builder -> Parser Token
 comment content0 = do
     content <- B.fromText <$> takeWhile (notInClass "-")
     id $  (char '-' >> commentEndDash (content0 <> content))
       <|> (char '\x00' >> comment (content0 <> content <> B.singleton '\xfffd'))
 
--- | 8.2.4.49: Comment end dash state
+-- | /§8.2.4.49/: Comment end dash state
 commentEndDash :: Builder -> Parser Token
 commentEndDash content = do
         (char '-' >> commentEnd content)
     <|> (char '\x00' >> comment (content <> "-\xfffd"))
     <|> (anyChar >>= \c -> comment (content <> "-" <> B.singleton c))
 
--- | 8.2.4.50: Comment end state
+-- | /§8.2.4.50/: Comment end state
 commentEnd :: Builder -> Parser Token
 commentEnd content = do
         (char '>' >> return (Comment content))
@@ -222,7 +226,7 @@ commentEnd content = do
     -- <|> ()  TODO: other cases
     <|> (anyChar >>= \c -> comment (content <> "-" <> B.singleton c))
 
--- | 8.2.4.52: DOCTYPE state
+-- | /§8.2.4.52/: DOCTYPE state
 -- FIXME
 doctype :: Parser Token
 doctype = do
@@ -230,7 +234,7 @@ doctype = do
     char '>'
     return $ Doctype content
 
--- | 8.2.4.44: Bogus comment state
+-- | /§8.2.4.44/: Bogus comment state
 bogusComment :: Parser Token
 bogusComment = fail "Bogus comment"
 
