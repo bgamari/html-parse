@@ -18,7 +18,6 @@ import Control.Monad (guard)
 import Control.DeepSeq
 
 import Data.Attoparsec.Text
-import qualified Data.Attoparsec.Text as A
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Lazy.Builder (Builder)
