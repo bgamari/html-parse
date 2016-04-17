@@ -8,6 +8,7 @@
 module Text.HTML.Parser
     ( -- * Parsing
       parseTokens
+    , parseTokensLazy
     , token
       -- * Types
     , Token(..)
@@ -24,8 +25,10 @@ import Control.Monad (guard)
 import Control.DeepSeq
 
 import Data.Attoparsec.Text
+import qualified Data.Attoparsec.Text.Lazy as AL
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import Data.Text.Lazy.Builder (Builder)
 import qualified Data.Text.Lazy.Builder as B
 import Prelude hiding (take, takeWhile)
@@ -246,7 +249,7 @@ doctype = do
 bogusComment :: Parser Token
 bogusComment = fail "Bogus comment"
 
--- | Parse a lazy list of tokens.
+-- | Parse a lazy list of tokens from strict 'Text'.
 parseTokens :: Text -> [Token]
 parseTokens = unfoldr f
   where
@@ -257,3 +260,15 @@ parseTokens = unfoldr f
         case parse token t of
             Done rest tok -> Just (tok, rest)
             _             -> Nothing
+
+-- | Parse a lazy list of tokens from lazy 'TL.Text'.
+parseTokensLazy :: TL.Text -> [Token]
+parseTokensLazy = unfoldr f
+  where
+    f :: TL.Text -> Maybe (Token, TL.Text)
+    f t
+      | TL.null t = Nothing
+      | otherwise =
+        case AL.parse token t of
+            AL.Done rest tok -> Just (tok, rest)
+            _                -> Nothing
