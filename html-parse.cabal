@@ -1,5 +1,5 @@
 name:                html-parse
-version:             0.1.0.0
+version:             0.2.0.0
 synopsis:            A high-performance HTML tokenizer
 description:
     This package provides a fast and reasonably robust HTML5 tokenizer built
