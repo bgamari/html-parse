@@ -260,6 +260,10 @@ parseTokens = unfoldr f
       | otherwise =
         case parse token t of
             Done rest tok -> Just (tok, rest)
+            Partial cont  ->
+                case cont mempty of
+                  Done rest tok -> Just (tok, rest)
+                  _             -> Nothing
             _             -> Nothing
 
 -- | Parse a lazy list of tokens from lazy 'TL.Text'.
