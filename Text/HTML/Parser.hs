@@ -206,6 +206,7 @@ commentStart :: Parser Token
 commentStart = do
           (char '-' >> commentStartDash)
       <|> (char '>' >> return (Comment mempty))
+      <|> comment mempty
 
 -- | /§8.2.4.47/: Comment start dash state
 commentStartDash :: Parser Token
