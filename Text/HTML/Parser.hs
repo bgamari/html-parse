@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase #-}
 
 -- | This is a performance-oriented HTML tokenizer aim at web-crawling
 -- applications. It follows the HTML5 parsing specification quite closely,
@@ -14,6 +15,12 @@ module Text.HTML.Parser
     , Token(..)
     , TagName, AttrName, AttrValue
     , Attr(..)
+      -- * Rendering, text canonicalization
+    , renderTokens
+    , renderToken
+    , renderAttrs
+    , renderAttr
+    , canonicalizeTokens
     ) where
 
 import Data.Char hiding (isSpace)
@@ -277,3 +284,42 @@ parseTokensLazy = unfoldr f
         case AL.parse token t of
             AL.Done rest tok -> Just (tok, rest)
             _                -> Nothing
+
+-- | See 'renderToken'.
+renderTokens :: [Token] -> TL.Text
+renderTokens = mconcat . fmap renderToken
+
+-- | (Somewhat) canonical string representation of 'Token'.
+renderToken :: Token -> TL.Text
+renderToken = TL.fromStrict . mconcat . \case
+    (TagOpen n [])    -> ["<", n, ">"]
+    (TagOpen n attrs) -> ["<", n, " ", renderAttrs attrs, ">"]
+    (TagClose n)      -> ["</", n, ">"]
+    (ContentChar c)   -> [T.singleton c]
+    (ContentText t)   -> [t]
+    (Comment builder) -> ["<!--", TL.toStrict $ B.toLazyText builder, "-->"]
+    (Doctype t)       -> ["<!DOCTYPE", t, ">"]
+
+-- | See 'renderAttr'.
+renderAttrs :: [Attr] -> Text
+renderAttrs = T.unwords . fmap renderAttr . reverse
+
+-- | Does not escape quotation in attribute values!
+renderAttr :: Attr -> Text
+renderAttr (Attr k v) = mconcat [k, "=\"", v, "\""]
+
+-- | Meld neighoring 'ContentChar' and 'ContentText' constructors together and drops empty text
+-- elements.
+canonicalizeTokens :: [Token] -> [Token]
+canonicalizeTokens = filter (/= ContentText "") . meldTextTokens
+
+meldTextTokens :: [Token] -> [Token]
+meldTextTokens = concatTexts . fmap charToText
+  where
+    charToText (ContentChar c) = ContentText (T.singleton c)
+    charToText t = t
+
+    concatTexts = \case
+      (ContentText t : ContentText t' : ts) -> concatTexts $ ContentText (t <> t') : ts
+      (t : ts) -> t : concatTexts ts
+      [] -> []

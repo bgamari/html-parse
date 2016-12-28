@@ -45,3 +45,18 @@ benchmark bench
                        tagsoup >= 0.13,
                        criterion >= 1.1
   default-language:    Haskell2010
+
+test-suite spec
+  type:                exitcode-stdio-1.0
+  main-is:             Spec.hs
+  hs-source-dirs:      tests
+  ghc-options:         -Wall -with-rtsopts=-T
+  build-depends:       base,
+                       hspec,
+                       hspec-discover,
+                       html-parse,
+                       QuickCheck,
+                       quickcheck-instances,
+                       string-conversions,
+                       text
+  default-language:    Haskell2010
