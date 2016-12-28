@@ -26,12 +26,13 @@ source-repository head
   location:            git://github.com/bgamari/html-parse
 
 library
-  exposed-modules:     Text.HTML.Parser
+  exposed-modules:     Text.HTML.Parser, Text.HTML.Tree
   other-extensions:    OverloadedStrings, DeriveGeneric
   build-depends:       base >=4.7 && <4.10,
                        deepseq >=1.4 && <1.5,
                        attoparsec >=0.13 && <0.14,
-                       text >=1.2 && <1.3
+                       text >=1.2 && <1.3,
+                       containers >=0.5 && <0.6
   default-language:    Haskell2010
 
 benchmark bench
@@ -52,6 +53,7 @@ test-suite spec
   hs-source-dirs:      tests
   ghc-options:         -Wall -with-rtsopts=-T
   build-depends:       base,
+                       containers,
                        hspec,
                        hspec-discover,
                        html-parse,
