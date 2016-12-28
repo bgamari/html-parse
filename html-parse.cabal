@@ -28,7 +28,7 @@ source-repository head
 library
   exposed-modules:     Text.HTML.Parser
   other-extensions:    OverloadedStrings, DeriveGeneric
-  build-depends:       base >=4.8 && <4.10,
+  build-depends:       base >=4.7 && <4.10,
                        deepseq >=1.4 && <1.5,
                        attoparsec >=0.13 && <0.14,
                        text >=1.2 && <1.3
