@@ -43,6 +43,7 @@ before_install:
  - PKGNAME='html-parse'
 
 install:
+ - cabal update && cabal install hspec-discover
  - cabal --version
  - echo "$(${HC} --version) [$(${HC} --print-project-git-commit-id 2> /dev/null || echo '?')]"
  - BENCH=${BENCH---enable-benchmarks}
