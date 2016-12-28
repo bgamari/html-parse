@@ -9,6 +9,8 @@
 module Text.HTML.ParserSpec
 where
 
+import Control.Applicative
+import Data.Monoid
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Builder as B
