@@ -49,8 +49,9 @@ benchmark bench
 
 test-suite spec
   type:                exitcode-stdio-1.0
-  main-is:             Spec.hs
   hs-source-dirs:      tests
+  main-is:             Spec.hs
+  other-modules:       Text.HTML.ParserSpec, Text.HTML.TreeSpec
   ghc-options:         -Wall -with-rtsopts=-T
   build-depends:       base,
                        containers,
