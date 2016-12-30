@@ -106,7 +106,7 @@ tagOpen =
 -- TODO: This isn't right
 endTagOpen :: Parser Token
 endTagOpen = do
-    name <- takeWhile $ \c -> isAsciiUpper c || isAsciiLower c
+    name <- takeWhile $ notInClass "\x09\x0a\x0c />"
     char '>'
     return $ TagClose name
 
