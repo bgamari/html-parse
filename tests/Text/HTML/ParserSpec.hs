@@ -74,3 +74,8 @@ spec = do
   it "canonicalizeTokens is idempotent" . property . forAllShrink arbitrary shrink $
     \tokens
       -> canonicalizeTokens tokens `shouldBe` canonicalizeTokens (canonicalizeTokens tokens)
+
+  describe "regression tests" $ do
+    describe "parseTokens" $ do
+      it "works on `<h1>Heading</h1>`" $ do
+        parseTokens "<h1>Heading</h1>" `shouldBe` [TagOpen "h1" [], ContentText "Heading", TagClose "h1"]
