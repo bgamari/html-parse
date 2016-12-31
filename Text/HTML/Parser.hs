@@ -91,32 +91,23 @@ tagOpen =
         (char '!' >> markupDeclOpen)
     <|> (char '/' >> endTagOpen)
     <|> (char '?' >> bogusComment)
-    <|> tryStartTag
+    <|> tagNameOpen
     <|> other
   where
-    tryStartTag = do
-        c <- peekChar'
-        guard $ isAsciiUpper c || isAsciiLower c
-        tagNameOpen
-
     other = do
         return $ ContentChar '<'
 
 -- | /§8.2.4.9/: End tag open state
 endTagOpen :: Parser Token
-endTagOpen = do
-    tryEndTag
-  where
-    tryEndTag = do
-        c <- peekChar'
-        guard $ isAsciiUpper c || isAsciiLower c
-        tagNameClose
+endTagOpen = tagNameClose
 
 -- | /§8.2.4.10/: Tag name state: the open case
 --
 -- deviation: no lower-casing
 tagNameOpen :: Parser Token
 tagNameOpen = do
+    c <- peekChar'
+    guard $ isAsciiUpper c || isAsciiLower c
     tag <- takeWhile $ notInClass "\x09\x0a\x0c />"
     id $  (satisfy (inClass "\x09\x0a\x0c ") >> beforeAttrName tag [])
       <|> (char '/' >> selfClosingStartTag tag [])
@@ -127,6 +118,8 @@ tagNameOpen = do
 -- deviation: no lower-casing
 tagNameClose :: Parser Token
 tagNameClose = do
+    c <- peekChar'
+    guard $ isAsciiUpper c || isAsciiLower c
     tag <- takeWhile $ notInClass "\x09\x0a\x0c />"
     char '>' >> return (TagClose tag)
 
