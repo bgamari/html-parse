@@ -106,22 +106,25 @@ endTagOpen = tagNameClose
 -- deviation: no lower-casing
 tagNameOpen :: Parser Token
 tagNameOpen = do
-    c <- peekChar'
-    guard $ isAsciiUpper c || isAsciiLower c
-    tag <- takeWhile $ notInClass "\x09\x0a\x0c />"
+    tag <- tagName'
     id $  (satisfy (inClass "\x09\x0a\x0c ") >> beforeAttrName tag [])
       <|> (char '/' >> selfClosingStartTag tag [])
       <|> (char '>' >> return (TagOpen tag []))
 
 -- | /§8.2.4.10/: Tag name state: close case
---
--- deviation: no lower-casing
 tagNameClose :: Parser Token
 tagNameClose = do
+    tag <- tagName'
+    char '>' >> return (TagClose tag)
+
+-- | /§8.2.4.10/: Tag name state: common code
+--
+-- deviation: no lower-casing
+tagName' :: Parser Text
+tagName' = do
     c <- peekChar'
     guard $ isAsciiUpper c || isAsciiLower c
-    tag <- takeWhile $ notInClass "\x09\x0a\x0c />"
-    char '>' >> return (TagClose tag)
+    takeWhile $ notInClass "\x09\x0a\x0c />"
 
 -- | /§8.2.4.43/: Self-closing start tag state
 selfClosingStartTag :: TagName -> [Attr] -> Parser Token
