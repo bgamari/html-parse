@@ -91,34 +91,40 @@ tagOpen =
         (char '!' >> markupDeclOpen)
     <|> (char '/' >> endTagOpen)
     <|> (char '?' >> bogusComment)
-    <|> tryStartTag
+    <|> tagNameOpen
     <|> other
   where
-    tryStartTag = do
-        c <- peekChar'
-        guard $ isAsciiUpper c || isAsciiLower c
-        tagName
-
     other = do
         return $ ContentChar '<'
 
 -- | /§8.2.4.9/: End tag open state
--- TODO: This isn't right
 endTagOpen :: Parser Token
-endTagOpen = do
-    name <- takeWhile $ \c -> isAsciiUpper c || isAsciiLower c
-    char '>'
-    return $ TagClose name
+endTagOpen = tagNameClose
 
--- | /§8.2.4.10/: Tag name state
+-- | /§8.2.4.10/: Tag name state: the open case
 --
 -- deviation: no lower-casing
-tagName :: Parser Token
-tagName = do
-    tag <- takeWhile $ notInClass "\x09\x0a\x0c />"
+tagNameOpen :: Parser Token
+tagNameOpen = do
+    tag <- tagName'
     id $  (satisfy (inClass "\x09\x0a\x0c ") >> beforeAttrName tag [])
       <|> (char '/' >> selfClosingStartTag tag [])
       <|> (char '>' >> return (TagOpen tag []))
+
+-- | /§8.2.4.10/: Tag name state: close case
+tagNameClose :: Parser Token
+tagNameClose = do
+    tag <- tagName'
+    char '>' >> return (TagClose tag)
+
+-- | /§8.2.4.10/: Tag name state: common code
+--
+-- deviation: no lower-casing
+tagName' :: Parser Text
+tagName' = do
+    c <- peekChar'
+    guard $ isAsciiUpper c || isAsciiLower c
+    takeWhile $ notInClass "\x09\x0a\x0c /<>"
 
 -- | /§8.2.4.43/: Self-closing start tag state
 selfClosingStartTag :: TagName -> [Attr] -> Parser Token
@@ -140,7 +146,7 @@ beforeAttrName tag attrs = do
 -- | /§8.2.4.35/: Attribute name state
 attrName :: TagName -> [Attr] -> Parser Token
 attrName tag attrs = do
-    name <- takeWhile $ notInClass "\x09\x0a\x0c /=>\x00"
+    name <- takeWhile $ notInClass "\x09\x0a\x0c /=<>\x00"
     id $  (satisfy (inClass "\x09\x0a\x0c ") >> afterAttrName tag attrs name)
       <|> (char '/' >> selfClosingStartTag tag attrs)
       <|> (char '=' >> beforeAttrValue tag attrs name)
