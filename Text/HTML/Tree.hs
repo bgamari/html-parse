@@ -20,7 +20,7 @@ import           Text.HTML.Parser
 
 -- | If you want to store additional data into your tree, you can define your own token type and
 -- instantiate this class to define a mapping between your type and 'Token'.  See
--- 'parseTokenForest''.
+-- 'parseTokenForest'.
 class IsToken a where
     toToken   :: a -> Maybe Token
     fromToken :: Token -> a
