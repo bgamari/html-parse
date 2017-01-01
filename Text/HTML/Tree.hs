@@ -2,12 +2,10 @@
 {-# LANGUAGE ViewPatterns          #-}
 
 module Text.HTML.Tree
-    ( -- * Class
-      IsToken(..)
-      -- * Parsing forests
-    , tokensToForest
+    ( -- * Constructing forests
+      tokensToForest
     , ParseTokenForestError(..), PStack(..)
-      -- * Rendering forests
+      -- * Deconstructing forests
     , tokensFromForest
     , tokensFromTree
     ) where
@@ -17,64 +15,51 @@ import           Data.Tree
 import           Text.HTML.Parser
 
 
--- | If you want to store additional data into your tree, you can define your own token type and
--- instantiate this class to define a mapping between your type and 'Token'.  See
--- 'parseTokenForest'.
-class IsToken a where
-    toToken   :: a -> Maybe Token
-    fromToken :: Token -> a
-
-instance IsToken Token where
-    toToken   = Just
-    fromToken = id
-
-
-tokensToForest :: (IsToken token) => [token] -> Either (ParseTokenForestError token) (Forest token)
+tokensToForest :: [Token] -> Either ParseTokenForestError (Forest Token)
 tokensToForest = f (PStack [] [])
   where
     f (PStack ss []) [] = Right (reverse ss)
     f pstack []         = Left $ ParseTokenForestErrorBracketMismatch pstack Nothing
-    f pstack (t : ts)   = case toToken t of
-        Just (TagOpen "br" _)  -> f (pushFlatSibling t pstack) ts
-        Just (TagOpen "hr" _)  -> f (pushFlatSibling t pstack) ts
-        Just (TagOpen "img" _) -> f (pushFlatSibling t pstack) ts
-        Just (TagOpen _ _)     -> f (pushParent t pstack) ts
-        Just (TagClose n)      -> (`f` ts) =<< popParent n pstack
-        Just (ContentChar _)   -> f (pushFlatSibling t pstack) ts
-        Just (ContentText _)   -> f (pushFlatSibling t pstack) ts
-        Just (Comment _)       -> f (pushFlatSibling t pstack) ts
-        Just (Doctype _)       -> f (pushFlatSibling t pstack) ts
-        Nothing                -> f (pushFlatSibling t pstack) ts
+    f pstack (t : ts)   = case t of
+        TagOpen "br" _  -> f (pushFlatSibling t pstack) ts
+        TagOpen "hr" _  -> f (pushFlatSibling t pstack) ts
+        TagOpen "img" _ -> f (pushFlatSibling t pstack) ts
+        TagOpen _ _     -> f (pushParent t pstack) ts
+        TagClose n      -> (`f` ts) =<< popParent n pstack
+        ContentChar _   -> f (pushFlatSibling t pstack) ts
+        ContentText _   -> f (pushFlatSibling t pstack) ts
+        Comment _       -> f (pushFlatSibling t pstack) ts
+        Doctype _       -> f (pushFlatSibling t pstack) ts
 
-data ParseTokenForestError t =
-    ParseTokenForestErrorBracketMismatch (PStack t) (Maybe Token)
+data ParseTokenForestError =
+    ParseTokenForestErrorBracketMismatch PStack (Maybe Token)
   deriving (Eq, Show)
 
-data PStack t = PStack
-    { _pstackToplevelSiblings :: Forest t
-    , _pstackParents          :: [(t, Forest t)]
+data PStack = PStack
+    { _pstackToplevelSiblings :: Forest Token
+    , _pstackParents          :: [(Token, Forest Token)]
     }
   deriving (Eq, Show)
 
-pushParent :: t -> PStack t -> PStack t
+pushParent :: Token -> PStack -> PStack
 pushParent t (PStack ss ps) = PStack [] ((t, ss) : ps)
 
-popParent :: (IsToken t) => TagName -> PStack t -> Either (ParseTokenForestError t) (PStack t)
-popParent n (PStack ss ((p@(toToken -> Just (TagOpen n' _)), ss') : ps))
+popParent :: TagName -> PStack -> Either ParseTokenForestError PStack
+popParent n (PStack ss ((p@(TagOpen n' _), ss') : ps))
     | n == n' = Right $ PStack (Node p (reverse ss) : ss') ps
 popParent n pstack
     = Left $ ParseTokenForestErrorBracketMismatch pstack (Just $ TagClose n)
 
-pushFlatSibling :: t -> PStack t -> PStack t
+pushFlatSibling :: Token -> PStack -> PStack
 pushFlatSibling t (PStack ss ps) = PStack (Node t [] : ss) ps
 
 
-tokensFromForest :: (IsToken t) => Forest t -> [t]
+tokensFromForest :: Forest Token -> [Token]
 tokensFromForest = mconcat . fmap tokensFromTree
 
-tokensFromTree :: (IsToken t) => Tree t -> [t]
-tokensFromTree (Node o@(toToken -> Just (TagOpen n _)) ts)
-    = [o] <> tokensFromForest ts <> [fromToken $ TagClose n]
+tokensFromTree :: Tree Token -> [Token]
+tokensFromTree (Node o@(TagOpen n _) ts)
+    = [o] <> tokensFromForest ts <> [TagClose n]
 tokensFromTree (Node t [])
     = [t]
 tokensFromTree _
