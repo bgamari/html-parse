@@ -69,13 +69,13 @@ pushFlatSibling :: t -> PStack t -> PStack t
 pushFlatSibling t (PStack ss ps) = PStack (Node t [] : ss) ps
 
 
-renderTokenForest :: (IsToken t) => Forest t -> [t]
-renderTokenForest = mconcat . fmap renderTokenTree
+tokensFromForest :: (IsToken t) => Forest t -> [t]
+tokensFromForest = mconcat . fmap tokensFromTree
 
-renderTokenTree :: (IsToken t) => Tree t -> [t]
-renderTokenTree (Node o@(toToken -> Just (TagOpen n _)) ts)
-    = [o] <> renderTokenForest ts <> [fromToken $ TagClose n]
-renderTokenTree (Node t []) =
+tokensFromTree :: (IsToken t) => Tree t -> [t]
+tokensFromTree (Node o@(toToken -> Just (TagOpen n _)) ts)
+    = [o] <> tokensFromForest ts <> [fromToken $ TagClose n]
+tokensFromTree (Node t [])
     = [t]
-renderTokenTree _
+tokensFromTree _
     = error "renderTokenTree: leaf node with children."

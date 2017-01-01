@@ -32,4 +32,4 @@ spec :: Spec
 spec = do
   it "parseTokenForests and renderTokenForest are inverses"
     . property . forAllShrink arbitraryTokenForest shrinkTokenForest $
-      \forest -> parseTokenForest (renderTokenForest forest) `shouldBe` Right forest
+      \forest -> tokensToForest (tokensFromForest forest) `shouldBe` Right forest
