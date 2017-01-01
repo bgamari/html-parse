@@ -16,20 +16,17 @@ import           Text.HTML.Tree
 
 
 arbitraryTokenForest :: Gen (Forest Token)
-arbitraryTokenForest = listOf $ oneof
+arbitraryTokenForest = listOf arbitraryTokenTree
+
+arbitraryTokenTree :: Gen (Tree Token)
+arbitraryTokenTree = oneof
     [ Node <$> validOpen <*> scale (`div` 5) arbitraryTokenForest
     , Node <$> validFlat <*> pure []
     ]
-
-shrinkTokenForest :: Forest Token -> [Forest Token]
-shrinkTokenForest = fmap shrinkTokenTree
-
-shrinkTokenTree :: Tree Token -> [Tree Token]
-shrinkTokenTree (Node n c) = Node <$> shrink n <*> shrink c
 
 
 spec :: Spec
 spec = do
   it "parseTokenForests and renderTokenForest are inverses"
-    . property . forAllShrink arbitraryTokenForest shrinkTokenForest $
+    . property . forAllShrink arbitraryTokenForest shrink $
       \forest -> tokensToForest (tokensFromForest forest) `shouldBe` Right forest
