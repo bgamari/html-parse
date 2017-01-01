@@ -73,11 +73,11 @@ pushFlatSibling t (PStack ss ps) = PStack (Node t [] : ss) ps
 renderTokenForest :: (IsToken t, Show t) => Forest t -> [t]
 renderTokenForest = mconcat . fmap renderTokenTree
 
-renderTokenTree :: (IsToken t, Show t) => Tree t -> [t]
+renderTokenTree :: (IsToken t) => Tree t -> [t]
 renderTokenTree = \case
   (Node o@(toToken -> Just (TagOpen n _)) ts)
     -> [o] <> renderTokenForest ts <> [fromToken $ TagClose n]
   (Node t [])
     -> [t]
   bad
-    -> error $ "renderTokenTree: leaf node with children: " <> show bad
+    -> error "renderTokenTree: leaf node with children."
