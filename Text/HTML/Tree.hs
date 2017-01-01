@@ -5,11 +5,11 @@ module Text.HTML.Tree
     ( -- * Class
       IsToken(..)
       -- * Parsing forests
-    , parseTokenForest
+    , tokensToForest
     , ParseTokenForestError(..), PStack(..)
       -- * Rendering forests
-    , renderTokenForest
-    , renderTokenTree
+    , tokensFromForest
+    , tokensFromTree
     ) where
 
 import           Data.Monoid
@@ -29,8 +29,8 @@ instance IsToken Token where
     fromToken = id
 
 
-parseTokenForest :: (IsToken token) => [token] -> Either (ParseTokenForestError token) (Forest token)
-parseTokenForest = f (PStack [] [])
+tokensToForest :: (IsToken token) => [token] -> Either (ParseTokenForestError token) (Forest token)
+tokensToForest = f (PStack [] [])
   where
     f (PStack ss []) [] = Right (reverse ss)
     f pstack []         = Left $ ParseTokenForestErrorBracketMismatch pstack Nothing
@@ -69,7 +69,7 @@ pushFlatSibling :: t -> PStack t -> PStack t
 pushFlatSibling t (PStack ss ps) = PStack (Node t [] : ss) ps
 
 
-renderTokenForest :: (IsToken t, Show t) => Forest t -> [t]
+renderTokenForest :: (IsToken t) => Forest t -> [t]
 renderTokenForest = mconcat . fmap renderTokenTree
 
 renderTokenTree :: (IsToken t) => Tree t -> [t]
