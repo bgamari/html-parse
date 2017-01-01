@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
@@ -20,9 +21,20 @@ arbitraryTokenForest = listOf arbitraryTokenTree
 
 arbitraryTokenTree :: Gen (Tree Token)
 arbitraryTokenTree = oneof
-    [ Node <$> validOpen <*> scale (`div` 5) arbitraryTokenForest
-    , Node <$> validFlat <*> pure []
+    [ Node <$> validClosingOpen    <*> scale (`div` 5) arbitraryTokenForest
+    , Node <$> validNonClosingOpen <*> pure []
+    , Node <$> validFlat           <*> pure []
     ]
+
+
+validNonClosingOpen :: Gen Token
+validNonClosingOpen = TagOpen <$> elements nonClosing <*> arbitrary
+
+validClosingOpen :: Gen Token
+validClosingOpen = do
+    n <- validXmlTagName
+    let n' = if n `elem` nonClosing then "_" else n
+    TagOpen n' <$> arbitrary
 
 
 spec :: Spec
