@@ -300,13 +300,14 @@ renderTokens = mconcat . fmap renderToken
 -- | (Somewhat) canonical string representation of 'Token'.
 renderToken :: Token -> TL.Text
 renderToken = TL.fromStrict . mconcat . \case
-    (TagOpen n [])    -> ["<", n, ">"]
-    (TagOpen n attrs) -> ["<", n, " ", renderAttrs attrs, ">"]
-    (TagClose n)      -> ["</", n, ">"]
-    (ContentChar c)   -> [T.singleton c]
-    (ContentText t)   -> [t]
-    (Comment builder) -> ["<!--", TL.toStrict $ B.toLazyText builder, "-->"]
-    (Doctype t)       -> ["<!DOCTYPE", t, ">"]
+    (TagOpen n [])         -> ["<", n, ">"]
+    (TagOpen n attrs)      -> ["<", n, " ", renderAttrs attrs, ">"]
+    (TagSelfClose n attrs) -> ["<", n, " ", renderAttrs attrs, " />"]
+    (TagClose n)           -> ["</", n, ">"]
+    (ContentChar c)        -> [T.singleton c]
+    (ContentText t)        -> [t]
+    (Comment builder)      -> ["<!--", TL.toStrict $ B.toLazyText builder, "-->"]
+    (Doctype t)            -> ["<!DOCTYPE", t, ">"]
 
 -- | See 'renderAttr'.
 renderAttrs :: [Attr] -> Text
