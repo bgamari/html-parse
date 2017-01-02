@@ -24,12 +24,13 @@ import           Text.HTML.Parser
 instance Arbitrary Token where
   arbitrary = oneof [validOpen, validClose, validFlat]
 
-  shrink (TagOpen n as)  = TagOpen n <$> shrink as
-  shrink (TagClose _)    = []
-  shrink (ContentText _) = []
-  shrink (ContentChar _) = []
-  shrink (Comment b)     = Comment . B.fromText <$> (shrink . TL.toStrict . B.toLazyText $ b)
-  shrink (Doctype t)     = Doctype <$> shrink t
+  shrink (TagOpen n as)      = TagOpen n <$> shrink as
+  shrink (TagSelfClose n as) = TagSelfClose n <$> shrink as
+  shrink (TagClose _)        = []
+  shrink (ContentText _)     = []
+  shrink (ContentChar _)     = []
+  shrink (Comment b)         = Comment . B.fromText <$> (shrink . TL.toStrict . B.toLazyText $ b)
+  shrink (Doctype t)         = Doctype <$> shrink t
 
 instance Arbitrary Attr where
   arbitrary = Attr <$> validXmlAttrName <*> validXmlAttrValue
