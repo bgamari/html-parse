@@ -177,14 +177,14 @@ beforeAttrValue tag attrs name = do
 attrValueDQuoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueDQuoted tag attrs name = do
     value <- takeWhile (/= '"')
-    char '"'
+    _ <- char '"'
     afterAttrValueQuoted tag attrs name value
 
 -- | /§8.2.4.39/: Attribute value (single-quoted) state
 attrValueSQuoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueSQuoted tag attrs name = do
     value <- takeWhile (/= '\'')
-    char '\''
+    _ <- char '\''
     afterAttrValueQuoted tag attrs name value
 
 -- | /§8.2.4.40/: Attribute value (unquoted) state
@@ -205,11 +205,11 @@ afterAttrValueQuoted tag attrs name value =
 -- | /§8.2.4.45/: Markup declaration open state
 markupDeclOpen :: Parser Token
 markupDeclOpen =
-        try comment
+        try comment_
     <|> try docType
         -- TODO: Fix the rest
   where
-    comment = string "--" >> commentStart
+    comment_ = string "--" >> commentStart
     docType = do
         -- switching this to asciiCI slowed things down by a factor of two
         s <- take 7
@@ -258,7 +258,7 @@ commentEnd content = do
 doctype :: Parser Token
 doctype = do
     content <- takeTill (=='>')
-    char '>'
+    _ <- char '>'
     return $ Doctype content
 
 -- | /§8.2.4.44/: Bogus comment state
