@@ -53,6 +53,8 @@ type AttrValue = Text
 data Token
   -- | An opening tag. Attribute ordering is arbitrary.
   = TagOpen !TagName [Attr]
+  -- | A self-closing tag.
+  | TagSelfClose !TagName [Attr]
   -- | A closing tag.
   | TagClose !TagName
   -- | The content between tags.
@@ -129,7 +131,7 @@ tagName' = do
 -- | /§8.2.4.43/: Self-closing start tag state
 selfClosingStartTag :: TagName -> [Attr] -> Parser Token
 selfClosingStartTag tag attrs = do
-        (char '>' >> return (TagOpen tag attrs))
+        (char '>' >> return (TagSelfClose tag attrs))
     <|> beforeAttrName tag attrs
 
 -- | /§8.2.4.34/: Before attribute name state
