@@ -44,7 +44,8 @@ validClose = TagClose <$> validXmlTagName
 
 validFlat :: Gen Token
 validFlat = oneof
-    [ ContentChar <$> validXmlChar
+    [ TagSelfClose <$> validXmlTagName <*> arbitrary
+    , ContentChar <$> validXmlChar
     , ContentText <$> validXmlText
     , Comment . B.fromText <$> validXmlCommentText
     , Doctype <$> validXmlText
