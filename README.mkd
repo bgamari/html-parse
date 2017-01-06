@@ -1,0 +1,14 @@
+# html-parse
+
+`html-parse` is an efficient, reasonably robust HTML tokenizer based on the
+HTML5 tokenization
+[specification](https://html.spec.whatwg.org/multipage/syntax.html#tokenization).
+The parser is written using the fast `attoparsec` parsing library and can
+exposes both a native `attoparsec` `Parser` as well as convenience functions for
+lazily parsing token streams out of strict and lazy `Text` values.
+
+For instance,
+```haskell
+>>> parseTokens "<div><h1>Hello World</h1><br/><p class=widget>Example!</p></div>"
+[TagOpen "div" [],TagOpen "h1" [],ContentText "Hello World",TagClose "h1",TagSelfClose "br" [],TagOpen "p" [Attr "class" "widget"],ContentText "Example!",TagClose "p",TagClose "div"]
+```
