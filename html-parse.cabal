@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:     Text.HTML.Parser, Text.HTML.Tree
+  ghc-options:         -Wall
   other-extensions:    OverloadedStrings, DeriveGeneric
   build-depends:       base >=4.7 && <4.10,
                        deepseq >=1.4 && <1.5,

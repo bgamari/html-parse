@@ -53,6 +53,8 @@ type AttrValue = Text
 data Token
   -- | An opening tag. Attribute ordering is arbitrary.
   = TagOpen !TagName [Attr]
+  -- | A self-closing tag.
+  | TagSelfClose !TagName [Attr]
   -- | A closing tag.
   | TagClose !TagName
   -- | The content between tags.
@@ -129,7 +131,7 @@ tagName' = do
 -- | /§8.2.4.43/: Self-closing start tag state
 selfClosingStartTag :: TagName -> [Attr] -> Parser Token
 selfClosingStartTag tag attrs = do
-        (char '>' >> return (TagOpen tag attrs))
+        (char '>' >> return (TagSelfClose tag attrs))
     <|> beforeAttrName tag attrs
 
 -- | /§8.2.4.34/: Before attribute name state
@@ -175,14 +177,14 @@ beforeAttrValue tag attrs name = do
 attrValueDQuoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueDQuoted tag attrs name = do
     value <- takeWhile (/= '"')
-    char '"'
+    _ <- char '"'
     afterAttrValueQuoted tag attrs name value
 
 -- | /§8.2.4.39/: Attribute value (single-quoted) state
 attrValueSQuoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueSQuoted tag attrs name = do
     value <- takeWhile (/= '\'')
-    char '\''
+    _ <- char '\''
     afterAttrValueQuoted tag attrs name value
 
 -- | /§8.2.4.40/: Attribute value (unquoted) state
@@ -203,11 +205,11 @@ afterAttrValueQuoted tag attrs name value =
 -- | /§8.2.4.45/: Markup declaration open state
 markupDeclOpen :: Parser Token
 markupDeclOpen =
-        try comment
+        try comment_
     <|> try docType
         -- TODO: Fix the rest
   where
-    comment = string "--" >> commentStart
+    comment_ = string "--" >> commentStart
     docType = do
         -- switching this to asciiCI slowed things down by a factor of two
         s <- take 7
@@ -256,7 +258,7 @@ commentEnd content = do
 doctype :: Parser Token
 doctype = do
     content <- takeTill (=='>')
-    char '>'
+    _ <- char '>'
     return $ Doctype content
 
 -- | /§8.2.4.44/: Bogus comment state
@@ -298,13 +300,14 @@ renderTokens = mconcat . fmap renderToken
 -- | (Somewhat) canonical string representation of 'Token'.
 renderToken :: Token -> TL.Text
 renderToken = TL.fromStrict . mconcat . \case
-    (TagOpen n [])    -> ["<", n, ">"]
-    (TagOpen n attrs) -> ["<", n, " ", renderAttrs attrs, ">"]
-    (TagClose n)      -> ["</", n, ">"]
-    (ContentChar c)   -> [T.singleton c]
-    (ContentText t)   -> [t]
-    (Comment builder) -> ["<!--", TL.toStrict $ B.toLazyText builder, "-->"]
-    (Doctype t)       -> ["<!DOCTYPE", t, ">"]
+    (TagOpen n [])         -> ["<", n, ">"]
+    (TagOpen n attrs)      -> ["<", n, " ", renderAttrs attrs, ">"]
+    (TagSelfClose n attrs) -> ["<", n, " ", renderAttrs attrs, " />"]
+    (TagClose n)           -> ["</", n, ">"]
+    (ContentChar c)        -> [T.singleton c]
+    (ContentText t)        -> [t]
+    (Comment builder)      -> ["<!--", TL.toStrict $ B.toLazyText builder, "-->"]
+    (Doctype t)            -> ["<!DOCTYPE", t, ">"]
 
 -- | See 'renderAttr'.
 renderAttrs :: [Attr] -> Text
