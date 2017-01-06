@@ -26,6 +26,7 @@ tokensToForest = f (PStack [] [])
         TagOpen n _     -> if n `elem` nonClosing
                              then f (pushFlatSibling t pstack) ts
                              else f (pushParent t pstack) ts
+        TagSelfClose {} -> f (pushFlatSibling t pstack) ts
         TagClose n      -> (`f` ts) =<< popParent n pstack
         ContentChar _   -> f (pushFlatSibling t pstack) ts
         ContentText _   -> f (pushFlatSibling t pstack) ts
