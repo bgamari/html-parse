@@ -7,6 +7,7 @@
 module Text.HTML.TreeSpec
 where
 
+import           Control.Applicative
 import           Data.Tree
 import           Test.Hspec
 import           Test.QuickCheck
@@ -14,6 +15,7 @@ import           Test.QuickCheck.Instances ()
 import           Text.HTML.Parser
 import           Text.HTML.ParserSpec
 import           Text.HTML.Tree
+import           Prelude
 
 
 arbitraryTokenForest :: Gen (Forest Token)
