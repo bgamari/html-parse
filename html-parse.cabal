@@ -9,6 +9,13 @@ description:
     The package targets similar use-cases to the venerable @tagsoup@ library,
     but is significantly more efficient, achieving parsing speeds of over 50
     megabytes per second on modern hardware with and typical web documents.
+    .
+    For instance,
+    .
+    >>> parseTokens "<div><h1 class=widget>Hello World</h1><br/>"
+    [TagOpen "div" [],TagOpen "h1" [Attr "class" "widget"],
+     ContentText "Hello World",TagClose "h1",TagSelfClose "br" []]
+
 homepage:            http://github.com/bgamari/html-parse
 license:             BSD3
 license-file:        LICENSE
