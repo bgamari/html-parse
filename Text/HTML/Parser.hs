@@ -40,6 +40,8 @@ import Data.Text.Lazy.Builder (Builder)
 import qualified Data.Text.Lazy.Builder as B
 import Prelude hiding (take, takeWhile)
 
+-- Section numbers refer to W3C HTML 5.2 specification.
+
 -- | A tag name (e.g. @body@)
 type TagName   = Text
 
@@ -87,23 +89,23 @@ dataState = do
       then return $ ContentText content
       else char '<' >> tagOpen
 
--- | /§8.2.4.3/: Tag open state
+-- | /§8.2.4.6/: Tag open state
 tagOpen :: Parser Token
 tagOpen =
         (char '!' >> markupDeclOpen)
     <|> (char '/' >> endTagOpen)
-    <|> (char '?' >> bogusComment)
+    <|> (char '?' >> bogusComment mempty)
     <|> tagNameOpen
     <|> other
   where
     other = do
         return $ ContentChar '<'
 
--- | /§8.2.4.9/: End tag open state
+-- | /§8.2.4.7/: End tag open state
 endTagOpen :: Parser Token
 endTagOpen = tagNameClose
 
--- | /§8.2.4.10/: Tag name state: the open case
+-- | /§8.2.4.8/: Tag name state: the open case
 --
 -- deviation: no lower-casing
 tagNameOpen :: Parser Token
@@ -202,12 +204,12 @@ afterAttrValueQuoted tag attrs name value =
       <|> (char '>' >> return (TagOpen tag attrs'))
   where attrs' = Attr name value : attrs
 
--- | /§8.2.4.45/: Markup declaration open state
+-- | /§8.2.4.42/: Markup declaration open state
 markupDeclOpen :: Parser Token
 markupDeclOpen =
         try comment_
     <|> try docType
-        -- TODO: Fix the rest
+    <|> bogusComment mempty
   where
     comment_ = string "--" >> commentStart
     docType = do
@@ -216,44 +218,78 @@ markupDeclOpen =
         guard $ T.toLower s == "doctype"
         doctype
 
--- | /§8.2.4.46/: Comment start state
+-- | /§8.2.4.43/: Comment start state
 commentStart :: Parser Token
 commentStart = do
           (char '-' >> commentStartDash)
       <|> (char '>' >> return (Comment mempty))
       <|> comment mempty
 
--- | /§8.2.4.47/: Comment start dash state
+-- | /§8.2.4.44/: Comment start dash state
 commentStartDash :: Parser Token
 commentStartDash =
           (char '-' >> commentEnd mempty)
       <|> (char '>' >> return (Comment mempty))
-      <|> (do c <- anyChar
-              comment (B.singleton '-' <> B.singleton c) )
+      <|> (comment (B.singleton '-'))
 
--- | /§8.2.4.48/: Comment state
+-- | /§8.2.4.45/: Comment state
 comment :: Builder -> Parser Token
 comment content0 = do
-    content <- B.fromText <$> takeWhile (notInClass "-")
-    id $  (char '-' >> commentEndDash (content0 <> content))
+    content <- B.fromText <$> takeWhile (notInClass "-\x00<")
+    id $  (char '<' >> commentLessThan (content0 <> content <> "<"))
+      <|> (char '-' >> commentEndDash (content0 <> content))
       <|> (char '\x00' >> comment (content0 <> content <> B.singleton '\xfffd'))
 
--- | /§8.2.4.49/: Comment end dash state
+-- | /§8.2.46/: Comment less-than sign state
+commentLessThan :: Builder -> Parser Token
+commentLessThan content =
+        (char '!' >> commentLessThanBang (content <> "!"))
+    <|> (char '<' >> commentLessThan (content <> "<"))
+    <|> comment content
+
+-- | /§8.2.47/: Comment less-than sign bang state
+commentLessThanBang :: Builder -> Parser Token
+commentLessThanBang content =
+        (char '-' >> commentLessThanBangDash content)
+    <|> comment content
+
+-- | /§8.2.48/: Comment less-than sign bang dash state
+commentLessThanBangDash :: Builder -> Parser Token
+commentLessThanBangDash content =
+        (char '-' >> commentLessThanBangDashDash content)
+    <|> commentEndDash content
+
+-- | /§8.2.49/: Comment less-than sign bang dash dash state
+commentLessThanBangDashDash :: Builder -> Parser Token
+commentLessThanBangDashDash content =
+        (char '>' >> comment content)
+    <|> (endOfInput >> comment content)
+    <|> commentEnd content
+
+-- | /§8.2.4.50/: Comment end dash state
 commentEndDash :: Builder -> Parser Token
 commentEndDash content = do
         (char '-' >> commentEnd content)
-    <|> (char '\x00' >> comment (content <> "-\xfffd"))
-    <|> (anyChar >>= \c -> comment (content <> "-" <> B.singleton c))
+    <|> (comment (content <> "-"))
 
--- | /§8.2.4.50/: Comment end state
+-- | /§8.2.4.51/: Comment end state
 commentEnd :: Builder -> Parser Token
 commentEnd content = do
         (char '>' >> return (Comment content))
-    <|> (char '\x00' >> comment (content <> "-\xfffd"))
-    -- <|> ()  TODO: other cases
-    <|> (anyChar >>= \c -> comment (content <> "-" <> B.singleton c))
+    <|> (char '!' >> commentEndBang content)
+    <|> (char '-' >> commentEnd (content <> "-"))
+    <|> (endOfInput >> return (Comment content))
+    <|> (comment (content <> "--"))
 
--- | /§8.2.4.52/: DOCTYPE state
+-- | /§8.2.4.52/: Comment end bang state
+commentEndBang :: Builder -> Parser Token
+commentEndBang content = do
+        (char '-' >> commentEndDash (content <> "--!"))
+    <|> (char '>' >> return (Comment content))
+    <|> (endOfInput >> return (Comment content))
+    <|> (comment (content <> "--!"))
+
+-- | /§8.2.4.53/: DOCTYPE state
 -- FIXME
 doctype :: Parser Token
 doctype = do
@@ -261,9 +297,13 @@ doctype = do
     _ <- char '>'
     return $ Doctype content
 
--- | /§8.2.4.44/: Bogus comment state
-bogusComment :: Parser Token
-bogusComment = fail "Bogus comment"
+-- | /§8.2.4.41/: Bogus comment state
+bogusComment :: Builder -> Parser Token
+bogusComment content = do
+        (char '>' >> return (Comment content))
+    <|> (endOfInput >> return (Comment content))
+    <|> (char '\x00' >> bogusComment (content <> "\xfffd"))
+    <|> (anyChar >>= \c -> bogusComment (content <> B.singleton c))
 
 -- | Parse a lazy list of tokens from strict 'Text'.
 parseTokens :: Text -> [Token]
