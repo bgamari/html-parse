@@ -107,7 +107,7 @@ endTagOpen = tagNameClose
 
 -- | /§8.2.4.8/: Tag name state: the open case
 --
--- deviation: no lower-casing
+-- deviation: no lower-casing, don't handle NULL characters
 tagNameOpen :: Parser Token
 tagNameOpen = do
     tag <- tagName'
@@ -123,20 +123,20 @@ tagNameClose = do
 
 -- | /§8.2.4.10/: Tag name state: common code
 --
--- deviation: no lower-casing
+-- deviation: no lower-casing, don't handle NULL characters
 tagName' :: Parser Text
 tagName' = do
     c <- peekChar'
     guard $ isAsciiUpper c || isAsciiLower c
     takeWhile $ notInClass "\x09\x0a\x0c /<>"
 
--- | /§8.2.4.43/: Self-closing start tag state
+-- | /§8.2.4.40/: Self-closing start tag state
 selfClosingStartTag :: TagName -> [Attr] -> Parser Token
 selfClosingStartTag tag attrs = do
         (char '>' >> return (TagSelfClose tag attrs))
     <|> beforeAttrName tag attrs
 
--- | /§8.2.4.34/: Before attribute name state
+-- | /§8.2.4.32/: Before attribute name state
 --
 -- deviation: no lower-casing
 beforeAttrName :: TagName -> [Attr] -> Parser Token
@@ -147,7 +147,7 @@ beforeAttrName tag attrs = do
       -- <|> (char '\x00' >> attrName tag attrs) -- TODO: NULL
       <|> attrName tag attrs
 
--- | /§8.2.4.35/: Attribute name state
+-- | /§8.2.4.33/: Attribute name state
 attrName :: TagName -> [Attr] -> Parser Token
 attrName tag attrs = do
     name <- takeWhile $ notInClass "\x09\x0a\x0c /=<>\x00"
@@ -157,7 +157,7 @@ attrName tag attrs = do
       <|> (char '>' >> return (TagOpen tag (Attr name T.empty : attrs)))
       -- <|> -- TODO: NULL
 
--- | /§8.2.4.36/: After attribute name state
+-- | /§8.2.4.34/: After attribute name state
 afterAttrName :: TagName -> [Attr] -> AttrName -> Parser Token
 afterAttrName tag attrs name = do
     skipWhile $ inClass "\x09\x0a\x0c "
@@ -166,7 +166,7 @@ afterAttrName tag attrs name = do
       <|> (char '>' >> return (TagOpen tag (Attr name T.empty : attrs)))
       <|> attrName tag (Attr name T.empty : attrs)  -- not exactly sure this is right
 
--- | /§8.2.4.37/: Before attribute value state
+-- | /§8.2.4.35/: Before attribute value state
 beforeAttrValue :: TagName -> [Attr] -> AttrName -> Parser Token
 beforeAttrValue tag attrs name = do
     skipWhile $ inClass "\x09\x0a\x0c "
@@ -175,34 +175,42 @@ beforeAttrValue tag attrs name = do
       <|> (char '>' >> return (TagOpen tag (Attr name T.empty : attrs)))
       <|> attrValueUnquoted tag attrs name
 
--- | /§8.2.4.38/: Attribute value (double-quoted) state
+-- | /§8.2.4.36/: Attribute value (double-quoted) state
 attrValueDQuoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueDQuoted tag attrs name = do
     value <- takeWhile (/= '"')
     _ <- char '"'
     afterAttrValueQuoted tag attrs name value
 
--- | /§8.2.4.39/: Attribute value (single-quoted) state
+-- | /§8.2.4.37/: Attribute value (single-quoted) state
 attrValueSQuoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueSQuoted tag attrs name = do
     value <- takeWhile (/= '\'')
     _ <- char '\''
     afterAttrValueQuoted tag attrs name value
 
--- | /§8.2.4.40/: Attribute value (unquoted) state
+-- | /§8.2.4.38/: Attribute value (unquoted) state
 attrValueUnquoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueUnquoted tag attrs name = do
     value <- takeTill (inClass "\x09\x0a\x0c >")
     id $  (satisfy (inClass "\x09\x0a\x0c ") >> beforeAttrName tag attrs) -- unsure: don't emit?
       <|> (char '>' >> return (TagOpen tag (Attr name value : attrs)))
 
--- | /§8.2.4.42/: After attribute value (quoted) state
+-- | /§8.2.4.39/: After attribute value (quoted) state
 afterAttrValueQuoted :: TagName -> [Attr] -> AttrName -> AttrValue -> Parser Token
 afterAttrValueQuoted tag attrs name value =
           (satisfy (inClass "\x09\x0a\x0c ") >> beforeAttrName tag attrs')
       <|> (char '/' >> selfClosingStartTag tag attrs')
       <|> (char '>' >> return (TagOpen tag attrs'))
   where attrs' = Attr name value : attrs
+
+-- | /§8.2.4.41/: Bogus comment state
+bogusComment :: Builder -> Parser Token
+bogusComment content = do
+        (char '>' >> return (Comment content))
+    <|> (endOfInput >> return (Comment content))
+    <|> (char '\x00' >> bogusComment (content <> "\xfffd"))
+    <|> (anyChar >>= \c -> bogusComment (content <> B.singleton c))
 
 -- | /§8.2.4.42/: Markup declaration open state
 markupDeclOpen :: Parser Token
@@ -296,14 +304,6 @@ doctype = do
     content <- takeTill (=='>')
     _ <- char '>'
     return $ Doctype content
-
--- | /§8.2.4.41/: Bogus comment state
-bogusComment :: Builder -> Parser Token
-bogusComment content = do
-        (char '>' >> return (Comment content))
-    <|> (endOfInput >> return (Comment content))
-    <|> (char '\x00' >> bogusComment (content <> "\xfffd"))
-    <|> (anyChar >>= \c -> bogusComment (content <> B.singleton c))
 
 -- | Parse a lazy list of tokens from strict 'Text'.
 parseTokens :: Text -> [Token]
