@@ -150,11 +150,13 @@ beforeAttrName tag attrs = do
 -- | /§8.2.4.33/: Attribute name state
 attrName :: TagName -> [Attr] -> Parser Token
 attrName tag attrs = do
-    name <- takeWhile $ notInClass "\x09\x0a\x0c /=<>\x00"
-    id $  (satisfy (inClass "\x09\x0a\x0c ") >> afterAttrName tag attrs name)
-      <|> (char '/' >> selfClosingStartTag tag attrs)
+    name <- takeWhile $ notInClass "\x09\x0a\x0c /=>"
+    id $  (endOfInput >> afterAttrName tag attrs name)
       <|> (char '=' >> beforeAttrValue tag attrs name)
-      <|> (char '>' >> return (TagOpen tag (Attr name T.empty : attrs)))
+      <|> try (do mc <- peekChar
+                  case mc of
+                    Just c | inClass "\x09\x0a\x0c />" c ->  afterAttrName tag attrs name
+                    _ -> empty)
       -- <|> -- TODO: NULL
 
 -- | /§8.2.4.34/: After attribute name state
