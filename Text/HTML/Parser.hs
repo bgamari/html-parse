@@ -69,6 +69,10 @@ data Token
   | Doctype !Text
   deriving (Show, Ord, Eq, Generic)
 
+-- | This is a bit of a hack
+endOfFileToken :: Token
+endOfFileToken = ContentText ""
+
 -- | An attribute of a tag
 data Attr = Attr !AttrName !AttrValue
           deriving (Show, Eq, Ord)
@@ -134,6 +138,7 @@ tagName' = do
 selfClosingStartTag :: TagName -> [Attr] -> Parser Token
 selfClosingStartTag tag attrs = do
         (char '>' >> return (TagSelfClose tag attrs))
+    <|> (endOfInput >> return endOfFileToken)
     <|> beforeAttrName tag attrs
 
 -- | /§8.2.4.32/: Before attribute name state
@@ -166,7 +171,7 @@ afterAttrName tag attrs name = do
     id $  (char '/' >> selfClosingStartTag tag attrs)
       <|> (char '=' >> beforeAttrValue tag attrs name)
       <|> (char '>' >> return (TagOpen tag (Attr name T.empty : attrs)))
-      <|> (endOfInput >> return (ContentText ""))
+      <|> (endOfInput >> return endOfFileToken)
       <|> attrName tag (Attr name T.empty : attrs)  -- not exactly sure this is right
 
 -- | /§8.2.4.35/: Before attribute value state
@@ -198,6 +203,7 @@ attrValueUnquoted tag attrs name = do
     value <- takeTill (inClass "\x09\x0a\x0c >")
     id $  (satisfy (inClass "\x09\x0a\x0c ") >> beforeAttrName tag attrs) -- unsure: don't emit?
       <|> (char '>' >> return (TagOpen tag (Attr name value : attrs)))
+      <|> (endOfInput >> return endOfFileToken)
 
 -- | /§8.2.4.39/: After attribute value (quoted) state
 afterAttrValueQuoted :: TagName -> [Attr] -> AttrName -> AttrValue -> Parser Token
@@ -205,6 +211,7 @@ afterAttrValueQuoted tag attrs name value =
           (satisfy (inClass "\x09\x0a\x0c ") >> beforeAttrName tag attrs')
       <|> (char '/' >> selfClosingStartTag tag attrs')
       <|> (char '>' >> return (TagOpen tag attrs'))
+      <|> (endOfInput >> return endOfFileToken)
   where attrs' = Attr name value : attrs
 
 -- | /§8.2.4.41/: Bogus comment state
@@ -241,6 +248,7 @@ commentStartDash :: Parser Token
 commentStartDash =
           (char '-' >> commentEnd mempty)
       <|> (char '>' >> return (Comment mempty))
+      <|> (endOfInput >> return (Comment mempty))
       <|> (comment (B.singleton '-'))
 
 -- | /§8.2.4.45/: Comment state
@@ -250,6 +258,7 @@ comment content0 = do
     id $  (char '<' >> commentLessThan (content0 <> content <> "<"))
       <|> (char '-' >> commentEndDash (content0 <> content))
       <|> (char '\x00' >> comment (content0 <> content <> B.singleton '\xfffd'))
+      <|> (endOfInput >> return (Comment $ content0 <> content))
 
 -- | /§8.2.46/: Comment less-than sign state
 commentLessThan :: Builder -> Parser Token
@@ -281,6 +290,7 @@ commentLessThanBangDashDash content =
 commentEndDash :: Builder -> Parser Token
 commentEndDash content = do
         (char '-' >> commentEnd content)
+    <|> (endOfInput >> return (Comment content))
     <|> (comment (content <> "-"))
 
 -- | /§8.2.4.51/: Comment end state
