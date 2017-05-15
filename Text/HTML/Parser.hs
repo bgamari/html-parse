@@ -166,6 +166,7 @@ afterAttrName tag attrs name = do
     id $  (char '/' >> selfClosingStartTag tag attrs)
       <|> (char '=' >> beforeAttrValue tag attrs name)
       <|> (char '>' >> return (TagOpen tag (Attr name T.empty : attrs)))
+      <|> (endOfInput >> return (ContentText ""))
       <|> attrName tag (Attr name T.empty : attrs)  -- not exactly sure this is right
 
 -- | /§8.2.4.35/: Before attribute value state
