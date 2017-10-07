@@ -12,3 +12,29 @@ For instance,
 >>> parseTokens "<div><h1>Hello World</h1><br/><p class=widget>Example!</p></div>"
 [TagOpen "div" [],TagOpen "h1" [],ContentText "Hello World",TagClose "h1",TagSelfClose "br" [],TagOpen "p" [Attr "class" "widget"],ContentText "Example!",TagClose "p",TagClose "div"]
 ```
+
+## Performance
+
+Here are some typical performance numbers taken from parsing a fairly
+long [Wikipedia article](https://en.wikipedia.org/wiki/New_York_City),
+```
+benchmarking Forced/tagsoup fast Text
+time                 171.2 ms   (166.4 ms .. 177.3 ms)
+                     0.999 R²   (0.997 R² .. 1.000 R²)
+mean                 171.9 ms   (169.4 ms .. 173.2 ms)
+std dev              2.516 ms   (1.104 ms .. 3.558 ms)
+variance introduced by outliers: 12% (moderately inflated)
+
+benchmarking Forced/tagsoup normal Text
+time                 176.9 ms   (167.3 ms .. 188.5 ms)
+                     0.998 R²   (0.994 R² .. 1.000 R²)
+mean                 180.7 ms   (177.5 ms .. 183.7 ms)
+std dev              4.246 ms   (2.316 ms .. 5.803 ms)
+variance introduced by outliers: 14% (moderately inflated)
+
+benchmarking Forced/html-parser
+time                 20.88 ms   (20.60 ms .. 21.25 ms)
+                     0.999 R²   (0.998 R² .. 0.999 R²)
+mean                 20.99 ms   (20.81 ms .. 21.20 ms)
+std dev              446.1 μs   (336.4 μs .. 596.2 μs)
+```

@@ -6,15 +6,42 @@ description:
     upon the @attoparsec@ library. The parsing strategy is based upon the HTML5
     parsing specification with few deviations.
     .
-    The package targets similar use-cases to the venerable @tagsoup@ library,
-    but is significantly more efficient, achieving parsing speeds of over 50
-    megabytes per second on modern hardware with and typical web documents.
-    .
     For instance,
     .
     >>> parseTokens "<div><h1 class=widget>Hello World</h1><br/>"
-    [TagOpen "div" [],TagOpen "h1" [Attr "class" "widget"],
-     ContentText "Hello World",TagClose "h1",TagSelfClose "br" []]
+    [TagOpen "div" [],
+     TagOpen "h1" [Attr "class" "widget"],
+     ContentText "Hello World",
+     TagClose "h1",
+     TagSelfClose "br" []]
+    .
+    The package targets similar use-cases to the venerable @tagsoup@ library,
+    but is significantly more efficient, achieving parsing speeds of over 50
+    megabytes per second on modern hardware and typical web documents.
+    Here are some typical performance numbers taken from parsing a Wikipedia
+    article of moderate length:
+    .
+    @
+    benchmarking Forced/tagsoup fast Text
+    time                 171.2 ms   (166.4 ms .. 177.3 ms)
+                         0.999 R²   (0.997 R² .. 1.000 R²)
+    mean                 171.9 ms   (169.4 ms .. 173.2 ms)
+    std dev              2.516 ms   (1.104 ms .. 3.558 ms)
+    variance introduced by outliers: 12% (moderately inflated)
+    .
+    benchmarking Forced/tagsoup normal Text
+    time                 176.9 ms   (167.3 ms .. 188.5 ms)
+                         0.998 R²   (0.994 R² .. 1.000 R²)
+    mean                 180.7 ms   (177.5 ms .. 183.7 ms)
+    std dev              4.246 ms   (2.316 ms .. 5.803 ms)
+    variance introduced by outliers: 14% (moderately inflated)
+    .
+    benchmarking Forced/html-parser
+    time                 20.88 ms   (20.60 ms .. 21.25 ms)
+                         0.999 R²   (0.998 R² .. 0.999 R²)
+    mean                 20.99 ms   (20.81 ms .. 21.20 ms)
+    std dev              446.1 μs   (336.4 μs .. 596.2 μs)
+    @
 
 homepage:            http://github.com/bgamari/html-parse
 license:             BSD3
