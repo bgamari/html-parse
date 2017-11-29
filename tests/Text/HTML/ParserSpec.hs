@@ -100,3 +100,11 @@ spec = do
     describe "parseTokens" $ do
       it "works on `<h1>Heading</h1>`" $ do
         parseTokens "<h1>Heading</h1>" `shouldBe` [TagOpen "h1" [], ContentText "Heading", TagClose "h1"]
+      it "terminates on truncated tags" $ do
+        parseTokens "19 -167.44 <A HREF=\"http://walrus.wr.usgs" `shouldBe` [ContentText "19 -167.44 ", ContentText ""]
+      it "parses comment correctly" $ do
+        parseTokens "<!-- 3. Change Banner -->" `shouldBe` [Comment " 3. Change Banner "]
+      it "parses commented tag correctly" $ do
+        parseTokens "<!-- img src=\"/www_images/NCEP_GFS.gif\">" `shouldBe` [Comment " img src=\"/www_images/NCEP_GFS.gif\">"]
+      it "parses funky comment" $ do
+        parseTokens "<!-- img src=\"/www_images/NCEP_GFS.gif\"><!- -------------------------------------------------------- >" `shouldBe` [Comment " img src=\"/www_images/NCEP_GFS.gif\"><!- -------------------------------------------------------- >"]
