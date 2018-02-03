@@ -270,7 +270,7 @@ commentStartDash =
 -- | /§8.2.4.45/: Comment state
 comment :: Builder -> Parser Token
 comment content0 = do
-    content <- B.fromText <$> takeWhile (notInClass "-\x00<")
+    content <- B.fromText <$> takeWhile (not . (isC '-' `orC` isC '\x00' `orC` isC '<'))
     id $  (char '<' >> commentLessThan (content0 <> content <> "<"))
       <|> (char '-' >> commentEndDash (content0 <> content))
       <|> (char '\x00' >> comment (content0 <> content <> B.singleton '\xfffd'))
