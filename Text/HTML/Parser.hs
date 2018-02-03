@@ -117,6 +117,14 @@ isWhitespace '\x0c' = True
 isWhitespace ' '    = True
 isWhitespace _      = False
 
+orC :: (Char -> Bool) -> (Char -> Bool) -> Char -> Bool
+orC f g c = f c || g c
+{-# INLINE orC #-}
+
+isC :: Char -> Char -> Bool
+isC = (==)
+{-# INLINE isC #-}
+
 -- | /§8.2.4.8/: Tag name state: the open case
 --
 -- deviation: no lower-casing, don't handle NULL characters
@@ -140,7 +148,7 @@ tagName' :: Parser Text
 tagName' = do
     c <- peekChar'
     guard $ isAsciiUpper c || isAsciiLower c
-    takeWhile $ notInClass "\x09\x0a\x0c /<>"
+    takeWhile $ not . (isWhitespace `orC` isC '/' `orC` isC '<' `orC` isC '>')
 
 -- | /§8.2.4.40/: Self-closing start tag state
 selfClosingStartTag :: TagName -> [Attr] -> Parser Token
