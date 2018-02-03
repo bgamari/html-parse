@@ -178,9 +178,10 @@ attrName tag attrs = do
       <|> (char '=' >> beforeAttrValue tag attrs name)
       <|> try (do mc <- peekChar
                   case mc of
-                    Just c | inClass "\x09\x0a\x0c />" c ->  afterAttrName tag attrs name
+                    Just c | notNameChar c ->  afterAttrName tag attrs name
                     _ -> empty)
       -- <|> -- TODO: NULL
+  where notNameChar = isWhitespace `orC` isC '/' `orC` isC '>'
 
 -- | /§8.2.4.34/: After attribute name state
 afterAttrName :: TagName -> [Attr] -> AttrName -> Parser Token
