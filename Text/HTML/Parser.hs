@@ -245,7 +245,7 @@ markupDeclOpen =
     <|> try docType
     <|> bogusComment mempty
   where
-    comment_ = string "--" >> commentStart
+    comment_ = char '-' >> char '-' >> commentStart
     docType = do
         -- switching this to asciiCI slowed things down by a factor of two
         s <- take 7
