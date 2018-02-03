@@ -2,6 +2,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 
+{-# OPTIONS_GHC -O2 #-}
+
 -- | This is a performance-oriented HTML tokenizer aim at web-crawling
 -- applications. It follows the HTML5 parsing specification quite closely,
 -- so it behaves reasonable well on ill-formed documents from the open Web.
