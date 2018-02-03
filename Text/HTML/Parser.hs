@@ -109,13 +109,29 @@ tagOpen =
 endTagOpen :: Parser Token
 endTagOpen = tagNameClose
 
+-- | Equivalent to @inClass "\x09\x0a\x0c "@
+isWhitespace :: Char -> Bool
+isWhitespace '\x09' = True
+isWhitespace '\x0a' = True
+isWhitespace '\x0c' = True
+isWhitespace ' '    = True
+isWhitespace _      = False
+
+orC :: (Char -> Bool) -> (Char -> Bool) -> Char -> Bool
+orC f g c = f c || g c
+{-# INLINE orC #-}
+
+isC :: Char -> Char -> Bool
+isC = (==)
+{-# INLINE isC #-}
+
 -- | /§8.2.4.8/: Tag name state: the open case
 --
 -- deviation: no lower-casing, don't handle NULL characters
 tagNameOpen :: Parser Token
 tagNameOpen = do
     tag <- tagName'
-    id $  (satisfy (inClass "\x09\x0a\x0c ") >> beforeAttrName tag [])
+    id $  (satisfy isWhitespace >> beforeAttrName tag [])
       <|> (char '/' >> selfClosingStartTag tag [])
       <|> (char '>' >> return (TagOpen tag []))
 
@@ -132,7 +148,7 @@ tagName' :: Parser Text
 tagName' = do
     c <- peekChar'
     guard $ isAsciiUpper c || isAsciiLower c
-    takeWhile $ notInClass "\x09\x0a\x0c /<>"
+    takeWhile $ not . (isWhitespace `orC` isC '/' `orC` isC '<' `orC` isC '>')
 
 -- | /§8.2.4.40/: Self-closing start tag state
 selfClosingStartTag :: TagName -> [Attr] -> Parser Token
@@ -146,7 +162,7 @@ selfClosingStartTag tag attrs = do
 -- deviation: no lower-casing
 beforeAttrName :: TagName -> [Attr] -> Parser Token
 beforeAttrName tag attrs = do
-    skipWhile $ inClass "\x09\x0a\x0c "
+    skipWhile isWhitespace
     id $  (char '/' >> selfClosingStartTag tag attrs)
       <|> (char '>' >> return (TagOpen tag attrs))
       -- <|> (char '\x00' >> attrName tag attrs) -- TODO: NULL
@@ -155,7 +171,7 @@ beforeAttrName tag attrs = do
 -- | /§8.2.4.33/: Attribute name state
 attrName :: TagName -> [Attr] -> Parser Token
 attrName tag attrs = do
-    name <- takeWhile $ notInClass "\x09\x0a\x0c /=>"
+    name <- takeWhile $ not . (isWhitespace `orC` isC '/' `orC` isC '=' `orC` isC '>')
     id $  (endOfInput >> afterAttrName tag attrs name)
       <|> (char '=' >> beforeAttrValue tag attrs name)
       <|> try (do mc <- peekChar
@@ -167,7 +183,7 @@ attrName tag attrs = do
 -- | /§8.2.4.34/: After attribute name state
 afterAttrName :: TagName -> [Attr] -> AttrName -> Parser Token
 afterAttrName tag attrs name = do
-    skipWhile $ inClass "\x09\x0a\x0c "
+    skipWhile isWhitespace
     id $  (char '/' >> selfClosingStartTag tag attrs)
       <|> (char '=' >> beforeAttrValue tag attrs name)
       <|> (char '>' >> return (TagOpen tag (Attr name T.empty : attrs)))
@@ -177,7 +193,7 @@ afterAttrName tag attrs name = do
 -- | /§8.2.4.35/: Before attribute value state
 beforeAttrValue :: TagName -> [Attr] -> AttrName -> Parser Token
 beforeAttrValue tag attrs name = do
-    skipWhile $ inClass "\x09\x0a\x0c "
+    skipWhile isWhitespace
     id $  (char '"' >> attrValueDQuoted tag attrs name)
       <|> (char '\'' >> attrValueSQuoted tag attrs name)
       <|> (char '>' >> return (TagOpen tag (Attr name T.empty : attrs)))
@@ -201,14 +217,14 @@ attrValueSQuoted tag attrs name = do
 attrValueUnquoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueUnquoted tag attrs name = do
     value <- takeTill (inClass "\x09\x0a\x0c >")
-    id $  (satisfy (inClass "\x09\x0a\x0c ") >> beforeAttrName tag attrs) -- unsure: don't emit?
+    id $  (satisfy isWhitespace >> beforeAttrName tag attrs) -- unsure: don't emit?
       <|> (char '>' >> return (TagOpen tag (Attr name value : attrs)))
       <|> (endOfInput >> return endOfFileToken)
 
 -- | /§8.2.4.39/: After attribute value (quoted) state
 afterAttrValueQuoted :: TagName -> [Attr] -> AttrName -> AttrValue -> Parser Token
 afterAttrValueQuoted tag attrs name value =
-          (satisfy (inClass "\x09\x0a\x0c ") >> beforeAttrName tag attrs')
+          (satisfy isWhitespace >> beforeAttrName tag attrs')
       <|> (char '/' >> selfClosingStartTag tag attrs')
       <|> (char '>' >> return (TagOpen tag attrs'))
       <|> (endOfInput >> return endOfFileToken)
@@ -229,7 +245,7 @@ markupDeclOpen =
     <|> try docType
     <|> bogusComment mempty
   where
-    comment_ = string "--" >> commentStart
+    comment_ = char '-' >> char '-' >> commentStart
     docType = do
         -- switching this to asciiCI slowed things down by a factor of two
         s <- take 7
@@ -254,7 +270,7 @@ commentStartDash =
 -- | /§8.2.4.45/: Comment state
 comment :: Builder -> Parser Token
 comment content0 = do
-    content <- B.fromText <$> takeWhile (notInClass "-\x00<")
+    content <- B.fromText <$> takeWhile (not . (isC '-' `orC` isC '\x00' `orC` isC '<'))
     id $  (char '<' >> commentLessThan (content0 <> content <> "<"))
       <|> (char '-' >> commentEndDash (content0 <> content))
       <|> (char '\x00' >> comment (content0 <> content <> B.singleton '\xfffd'))
