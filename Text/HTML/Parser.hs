@@ -2,6 +2,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 
+{-# OPTIONS_GHC -O2 #-}
+
 -- | This is a performance-oriented HTML tokenizer aim at web-crawling
 -- applications. It follows the HTML5 parsing specification quite closely,
 -- so it behaves reasonable well on ill-formed documents from the open Web.
@@ -176,9 +178,10 @@ attrName tag attrs = do
       <|> (char '=' >> beforeAttrValue tag attrs name)
       <|> try (do mc <- peekChar
                   case mc of
-                    Just c | inClass "\x09\x0a\x0c />" c ->  afterAttrName tag attrs name
+                    Just c | notNameChar c ->  afterAttrName tag attrs name
                     _ -> empty)
       -- <|> -- TODO: NULL
+  where notNameChar = isWhitespace `orC` isC '/' `orC` isC '>'
 
 -- | /§8.2.4.34/: After attribute name state
 afterAttrName :: TagName -> [Attr] -> AttrName -> Parser Token
@@ -216,7 +219,7 @@ attrValueSQuoted tag attrs name = do
 -- | /§8.2.4.38/: Attribute value (unquoted) state
 attrValueUnquoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueUnquoted tag attrs name = do
-    value <- takeTill (inClass "\x09\x0a\x0c >")
+    value <- takeTill $ isWhitespace `orC` isC '>'
     id $  (satisfy isWhitespace >> beforeAttrName tag attrs) -- unsure: don't emit?
       <|> (char '>' >> return (TagOpen tag (Attr name value : attrs)))
       <|> (endOfInput >> return endOfFileToken)

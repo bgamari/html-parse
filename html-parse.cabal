@@ -16,7 +16,7 @@ description:
      TagSelfClose "br" []]
     .
     The package targets similar use-cases to the venerable @tagsoup@ library,
-    but is significantly more efficient, achieving parsing speeds of over 50
+    but is significantly more efficient, achieving parsing speeds of over 80
     megabytes per second on modern hardware and typical web documents.
     Here are some typical performance numbers taken from parsing a Wikipedia
     article of moderate length:
