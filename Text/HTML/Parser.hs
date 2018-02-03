@@ -171,7 +171,7 @@ beforeAttrName tag attrs = do
 -- | /§8.2.4.33/: Attribute name state
 attrName :: TagName -> [Attr] -> Parser Token
 attrName tag attrs = do
-    name <- takeWhile $ notInClass "\x09\x0a\x0c /=>"
+    name <- takeWhile $ not . (isWhitespace `orC` isC '/' `orC` isC '=' `orC` isC '>')
     id $  (endOfInput >> afterAttrName tag attrs name)
       <|> (char '=' >> beforeAttrValue tag attrs name)
       <|> try (do mc <- peekChar
