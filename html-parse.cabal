@@ -16,31 +16,31 @@ description:
      TagSelfClose "br" []]
     .
     The package targets similar use-cases to the venerable @tagsoup@ library,
-    but is significantly more efficient, achieving parsing speeds of over 50
+    but is significantly more efficient, achieving parsing speeds of over 80
     megabytes per second on modern hardware and typical web documents.
     Here are some typical performance numbers taken from parsing a Wikipedia
     article of moderate length:
     .
     @
     benchmarking Forced/tagsoup fast Text
-    time                 171.2 ms   (166.4 ms .. 177.3 ms)
-                         0.999 R²   (0.997 R² .. 1.000 R²)
-    mean                 171.9 ms   (169.4 ms .. 173.2 ms)
-    std dev              2.516 ms   (1.104 ms .. 3.558 ms)
-    variance introduced by outliers: 12% (moderately inflated)
+    time                 186.1 ms   (175.3 ms .. 194.6 ms)
+                         0.999 R²   (0.995 R² .. 1.000 R²)
+    mean                 191.7 ms   (188.9 ms .. 198.3 ms)
+    std dev              5.053 ms   (1.092 ms .. 6.809 ms)
+    variance introduced by outliers: 14% (moderately inflated)
     .
     benchmarking Forced/tagsoup normal Text
-    time                 176.9 ms   (167.3 ms .. 188.5 ms)
-                         0.998 R²   (0.994 R² .. 1.000 R²)
-    mean                 180.7 ms   (177.5 ms .. 183.7 ms)
-    std dev              4.246 ms   (2.316 ms .. 5.803 ms)
+    time                 189.7 ms   (182.8 ms .. 197.7 ms)
+                         0.999 R²   (0.998 R² .. 1.000 R²)
+    mean                 196.5 ms   (193.1 ms .. 202.1 ms)
+    std dev              5.481 ms   (2.141 ms .. 7.383 ms)
     variance introduced by outliers: 14% (moderately inflated)
     .
     benchmarking Forced/html-parser
-    time                 20.88 ms   (20.60 ms .. 21.25 ms)
-                         0.999 R²   (0.998 R² .. 0.999 R²)
-    mean                 20.99 ms   (20.81 ms .. 21.20 ms)
-    std dev              446.1 μs   (336.4 μs .. 596.2 μs)
+    time                 15.81 ms   (15.75 ms .. 15.89 ms)
+                         1.000 R²   (1.000 R² .. 1.000 R²)
+    mean                 15.72 ms   (15.66 ms .. 15.77 ms)
+    std dev              140.9 μs   (113.6 μs .. 174.5 μs)
     @
 
 homepage:            http://github.com/bgamari/html-parse
