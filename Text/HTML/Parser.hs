@@ -119,6 +119,27 @@ isWhitespace '\x0c' = True
 isWhitespace ' '    = True
 isWhitespace _      = False
 
+isVoidElement :: Text -> Bool
+isVoidElement s = elem s voidElements where
+  voidElements =
+    [ "area"
+    , "base"
+    , "br"
+    , "col"
+    , "command"
+    , "embed"
+    , "hr"
+    , "img"
+    , "input"
+    , "keygen"
+    , "link"
+    , "meta"
+    , "param"
+    , "source"
+    , "track"
+    , "wbr"
+    ]
+
 orC :: (Char -> Bool) -> (Char -> Bool) -> Char -> Bool
 orC f g c = f c || g c
 {-# INLINE orC #-}
@@ -133,9 +154,13 @@ isC = (==)
 tagNameOpen :: Parser Token
 tagNameOpen = do
     tag <- tagName'
-    id $  (satisfy isWhitespace >> beforeAttrName tag [])
-      <|> (char '/' >> selfClosingStartTag tag [])
-      <|> (char '>' >> return (TagOpen tag []))
+    if isVoidElement tag
+      then  (satisfy isWhitespace >> beforeAttrNameSelfClosing tag [])
+        <|> (char '/' >> selfClosingStartTag' tag [])
+        <|> (char '>' >> return (TagSelfClose tag []))
+      else  (satisfy isWhitespace >> beforeAttrName tag [])
+        <|> (char '/' >> selfClosingStartTag tag [])
+        <|> (char '>' >> return (TagOpen tag []))
 
 -- | /§8.2.4.10/: Tag name state: close case
 tagNameClose :: Parser Token
@@ -159,6 +184,12 @@ selfClosingStartTag tag attrs = do
     <|> (endOfInput >> return endOfFileToken)
     <|> beforeAttrName tag attrs
 
+selfClosingStartTag' :: TagName -> [Attr] -> Parser Token
+selfClosingStartTag' tag attrs = do
+        (char '>' >> return (TagSelfClose tag attrs))
+    <|> (endOfInput >> return endOfFileToken)
+    <|> beforeAttrNameSelfClosing tag attrs
+
 -- | /§8.2.4.32/: Before attribute name state
 --
 -- deviation: no lower-casing
@@ -169,6 +200,13 @@ beforeAttrName tag attrs = do
       <|> (char '>' >> return (TagOpen tag attrs))
       -- <|> (char '\x00' >> attrName tag attrs) -- TODO: NULL
       <|> attrName tag attrs
+
+beforeAttrNameSelfClosing :: TagName -> [Attr] -> Parser Token
+beforeAttrNameSelfClosing tag attrs = do
+    skipWhile isWhitespace
+    id $  (char '/' >> selfClosingStartTag' tag attrs)
+      <|> (char '>' >> return (TagSelfClose tag attrs))
+      <|> attrNameSelfClosing tag attrs
 
 -- | /§8.2.4.33/: Attribute name state
 attrName :: TagName -> [Attr] -> Parser Token
@@ -183,6 +221,17 @@ attrName tag attrs = do
       -- <|> -- TODO: NULL
   where notNameChar = isWhitespace `orC` isC '/' `orC` isC '>'
 
+attrNameSelfClosing :: TagName -> [Attr] -> Parser Token
+attrNameSelfClosing tag attrs = do
+    name <- takeWhile $ not . (isWhitespace `orC` isC '/' `orC` isC '=' `orC` isC '>')
+    id $  (endOfInput >> afterAttrNameSelfClosing tag attrs name)
+      <|> (char '=' >> beforeAttrValueSelfClosing tag attrs name)
+      <|> try (do mc <- peekChar
+                  case mc of
+                    Just c | notNameChar c -> afterAttrNameSelfClosing tag attrs name
+                    _ -> empty)
+    where notNameChar = isWhitespace `orC` isC '/' `orC` isC '>'
+
 -- | /§8.2.4.34/: After attribute name state
 afterAttrName :: TagName -> [Attr] -> AttrName -> Parser Token
 afterAttrName tag attrs name = do
@@ -193,6 +242,15 @@ afterAttrName tag attrs name = do
       <|> (endOfInput >> return endOfFileToken)
       <|> attrName tag (Attr name T.empty : attrs)  -- not exactly sure this is right
 
+afterAttrNameSelfClosing :: TagName -> [Attr] -> AttrName -> Parser Token
+afterAttrNameSelfClosing tag attrs name = do
+    skipWhile isWhitespace
+    id $  (char '/' >> selfClosingStartTag' tag attrs)
+      <|> (char '=' >> beforeAttrValueSelfClosing tag attrs name)
+      <|> (char '>' >> return (TagSelfClose tag (Attr name T.empty : attrs)))
+      <|> (endOfInput >> return endOfFileToken)
+      <|> attrNameSelfClosing tag (Attr name T.empty : attrs)
+
 -- | /§8.2.4.35/: Before attribute value state
 beforeAttrValue :: TagName -> [Attr] -> AttrName -> Parser Token
 beforeAttrValue tag attrs name = do
@@ -202,6 +260,14 @@ beforeAttrValue tag attrs name = do
       <|> (char '>' >> return (TagOpen tag (Attr name T.empty : attrs)))
       <|> attrValueUnquoted tag attrs name
 
+beforeAttrValueSelfClosing :: TagName -> [Attr] -> AttrName -> Parser Token
+beforeAttrValueSelfClosing tag attrs name = do
+    skipWhile isWhitespace
+    id $  (char '"' >> attrValueDQuotedSelfClosing tag attrs name)
+      <|> (char '\'' >> attrValueSQuotedSelfClosing tag attrs name)
+      <|> (char '>' >> return (TagSelfClose tag (Attr name T.empty : attrs)))
+      <|> attrValueUnquotedSelfClosing tag attrs name
+
 -- | /§8.2.4.36/: Attribute value (double-quoted) state
 attrValueDQuoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueDQuoted tag attrs name = do
@@ -209,12 +275,24 @@ attrValueDQuoted tag attrs name = do
     _ <- char '"'
     afterAttrValueQuoted tag attrs name value
 
+attrValueDQuotedSelfClosing :: TagName -> [Attr] -> AttrName -> Parser Token
+attrValueDQuotedSelfClosing tag attrs name = do
+    value <- takeWhile (/= '"')
+    _ <- char '"'
+    afterAttrValueQuotedSelfClosing tag attrs name value
+
 -- | /§8.2.4.37/: Attribute value (single-quoted) state
 attrValueSQuoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueSQuoted tag attrs name = do
     value <- takeWhile (/= '\'')
     _ <- char '\''
     afterAttrValueQuoted tag attrs name value
+
+attrValueSQuotedSelfClosing :: TagName -> [Attr] -> AttrName -> Parser Token
+attrValueSQuotedSelfClosing tag attrs name = do
+    value <- takeWhile (/= '\'')
+    _ <- char '\''
+    afterAttrValueQuotedSelfClosing tag attrs name value
 
 -- | /§8.2.4.38/: Attribute value (unquoted) state
 attrValueUnquoted :: TagName -> [Attr] -> AttrName -> Parser Token
@@ -224,12 +302,27 @@ attrValueUnquoted tag attrs name = do
       <|> (char '>' >> return (TagOpen tag (Attr name value : attrs)))
       <|> (endOfInput >> return endOfFileToken)
 
+attrValueUnquotedSelfClosing :: TagName -> [Attr] -> AttrName -> Parser Token
+attrValueUnquotedSelfClosing tag attrs name = do
+    value <- takeTill $ isWhitespace `orC` isC '>'
+    id $  (satisfy isWhitespace >> beforeAttrNameSelfClosing tag attrs)
+      <|> (char '>' >> return (TagSelfClose tag (Attr name value : attrs)))
+      <|> (endOfInput >> return endOfFileToken)
+
 -- | /§8.2.4.39/: After attribute value (quoted) state
 afterAttrValueQuoted :: TagName -> [Attr] -> AttrName -> AttrValue -> Parser Token
 afterAttrValueQuoted tag attrs name value =
           (satisfy isWhitespace >> beforeAttrName tag attrs')
       <|> (char '/' >> selfClosingStartTag tag attrs')
       <|> (char '>' >> return (TagOpen tag attrs'))
+      <|> (endOfInput >> return endOfFileToken)
+  where attrs' = Attr name value : attrs
+
+afterAttrValueQuotedSelfClosing :: TagName -> [Attr] -> AttrName -> AttrValue -> Parser Token
+afterAttrValueQuotedSelfClosing tag attrs name value =
+          (satisfy isWhitespace >> beforeAttrNameSelfClosing tag attrs')
+      <|> (char '/' >> selfClosingStartTag' tag attrs')
+      <|> (char '>' >> return (TagSelfClose tag attrs'))
       <|> (endOfInput >> return endOfFileToken)
   where attrs' = Attr name value : attrs
 
