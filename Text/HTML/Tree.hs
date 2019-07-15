@@ -23,8 +23,8 @@ tokensToForest = f (PStack [] [])
     f (PStack ss []) [] = Right (reverse ss)
     f pstack []         = Left $ ParseTokenForestErrorBracketMismatch pstack Nothing
     f pstack (t : ts)   = case t of
-        TagOpen n _     -> if n `elem` nonClosing
-                             then f (pushFlatSibling t pstack) ts
+        TagOpen n as    -> if n `elem` nonClosing
+                             then f (pushFlatSibling (TagSelfClose n as) pstack) ts
                              else f (pushParent t pstack) ts
         TagSelfClose {} -> f (pushFlatSibling t pstack) ts
         TagClose n      -> (`f` ts) =<< popParent n pstack
@@ -34,7 +34,24 @@ tokensToForest = f (PStack [] [])
         Doctype _       -> f (pushFlatSibling t pstack) ts
 
 nonClosing :: [Text]
-nonClosing = ["br", "hr", "img"]
+nonClosing =
+  [ "area"
+  , "base"
+  , "br"
+  , "col"
+  , "command"
+  , "embed"
+  , "hr"
+  , "img"
+  , "input"
+  , "keygen"
+  , "link"
+  , "meta"
+  , "param"
+  , "source"
+  , "track"
+  , "wbr"
+  ]
 
 data ParseTokenForestError =
     ParseTokenForestErrorBracketMismatch PStack (Maybe Token)
