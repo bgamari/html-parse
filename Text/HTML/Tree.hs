@@ -34,7 +34,7 @@ tokensToForest = f (PStack [] [])
         Doctype _       -> f (pushFlatSibling t pstack) ts
 
 nonClosing :: [Text]
-nonClosing = ["br", "hr", "img"]
+nonClosing = ["br", "hr", "img", "meta", "area", "base", "col", "command", "embed", "input", "keygen", "link", "param", "source", "track", "wbr"]
 
 data ParseTokenForestError =
     ParseTokenForestErrorBracketMismatch PStack (Maybe Token)
