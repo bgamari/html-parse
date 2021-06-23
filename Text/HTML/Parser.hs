@@ -55,7 +55,7 @@ type AttrValue = Text
 
 -- | An HTML token
 data Token
-  -- | An opening tag. Attribute ordering is arbitrary.
+  -- | An opening tag. Attribute ordering is arbitrary. Void elements have a 'TagOpen' but no corresponding 'TagClose'. See 'Text.HTML.Tree.nonClosing'.
   = TagOpen !TagName [Attr]
   -- | A self-closing tag.
   | TagSelfClose !TagName [Attr]
