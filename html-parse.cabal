@@ -61,6 +61,7 @@ source-repository head
 
 library
   exposed-modules:     Text.HTML.Parser, Text.HTML.Tree
+  other-modules:       Text.HTML.Parser.Entities, Data.Trie
   ghc-options:         -Wall
   hs-source-dirs:      src
   other-extensions:    OverloadedStrings, DeriveGeneric

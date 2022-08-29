@@ -53,9 +53,9 @@ validFlat = oneof
 
 -- FIXME: sometimes it is allowed to use '<' as text token, and we don't test that yet.  (whether we
 -- like this choice or not, we may want to follow the standard here.)  (same in tag names, attr
--- names.)
+-- names). We also avoid '&' since this may produce spurious character references.
 validXmlChar :: Gen Char
-validXmlChar = elements (['\x20'..'\x7E'] \\ "\x09\x0a\x0c /<>")
+validXmlChar = elements (['\x20'..'\x7E'] \\ "\x09\x0a\x0c &/<>")
 
 validXmlText :: Gen T.Text
 validXmlText = T.pack <$> sized (`maxListOf` validXmlChar)
@@ -63,7 +63,7 @@ validXmlText = T.pack <$> sized (`maxListOf` validXmlChar)
 validXmlTagName :: Gen T.Text
 validXmlTagName = do
     initchar  <- elements $ ['a'..'z'] <> ['A'..'Z']
-    thenchars <- sized (`maxListOf` elements (['\x20'..'\x7E'] \\ "\x09\x0a\x0c /<>"))
+    thenchars <- sized (`maxListOf` elements (['\x20'..'\x7E'] \\ "\x09\x0a\x0c &/<>"))
     pure . T.pack $ initchar : thenchars
 
 validXmlAttrName :: Gen T.Text
@@ -90,7 +90,7 @@ spec :: Spec
 spec = do
   it "parseTokens and renderTokens are inverse" . property . forAllShrink arbitrary shrink $
     \(canonicalizeTokens -> tokens)
-      -> (parseTokens . TL.toStrict . renderTokens $ tokens) `shouldBe` tokens
+      -> (canonicalizeTokens . parseTokens . TL.toStrict . renderTokens $ tokens) `shouldBe` tokens
 
   it "canonicalizeTokens is idempotent" . property . forAllShrink arbitrary shrink $
     \tokens
@@ -108,3 +108,5 @@ spec = do
         parseTokens "<!-- img src=\"/www_images/NCEP_GFS.gif\">" `shouldBe` [Comment " img src=\"/www_images/NCEP_GFS.gif\">"]
       it "parses funky comment" $ do
         parseTokens "<!-- img src=\"/www_images/NCEP_GFS.gif\"><!- -------------------------------------------------------- >" `shouldBe` [Comment " img src=\"/www_images/NCEP_GFS.gif\"><!- -------------------------------------------------------- >"]
+      it "parses entity" $ do
+        parseTokens "&lt;" `shouldBe` [ContentText "<"]
