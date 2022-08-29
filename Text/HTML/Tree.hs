@@ -16,7 +16,13 @@ import           Data.Text (Text)
 import           Data.Tree
 import           Text.HTML.Parser
 
-
+-- | construct a 'Forest' from a 'Token' list.
+--
+-- This code correctly handles void elements. Void elements are required to have a start tag and must not have an end tag. See 'nonClosing'.
+--
+-- This code does __not__ correctly handle optional tags. It assumes all optional start and end tags are present.
+--
+-- <https:\/\/www.w3.org\/TR\/html52\/syntax.html#optional-tags>
 tokensToForest :: [Token] -> Either ParseTokenForestError (Forest Token)
 tokensToForest = f (PStack [] [])
   where
@@ -33,8 +39,15 @@ tokensToForest = f (PStack [] [])
         Comment _       -> f (pushFlatSibling t pstack) ts
         Doctype _       -> f (pushFlatSibling t pstack) ts
 
+-- | void elements which must not have an end tag
+--
+-- This list does not include the obsolete @\<command\>@ and @\<keygen\>@ elements.
+--
+-- @ nonClosing = ["br", "hr", "img", "meta", "area", "base", "col", "embed", "input", "link", "param", "source", "track", "wbr"] @
+--
+-- <https:\/\/www.w3.org\/TR\/html52\/syntax.html#void-elements>
 nonClosing :: [Text]
-nonClosing = ["br", "hr", "img"]
+nonClosing = ["br", "hr", "img", "meta", "area", "base", "col", "embed", "input", "link", "param", "source", "track", "wbr"]
 
 data ParseTokenForestError =
     ParseTokenForestErrorBracketMismatch PStack (Maybe Token)
@@ -58,10 +71,15 @@ popParent n pstack
 pushFlatSibling :: Token -> PStack -> PStack
 pushFlatSibling t (PStack ss ps) = PStack (Node t [] : ss) ps
 
-
+-- | convert a 'Forest' of 'Token' into a list of 'Token'.
+--
+-- This code correctly handles void elements. Void elements are required to have a start tag and must not have an end tag. See 'nonClosing'.
 tokensFromForest :: Forest Token -> [Token]
 tokensFromForest = mconcat . fmap tokensFromTree
 
+-- | convert a 'Tree' of 'Token' into a list of 'Token'.
+--
+-- This code correctly handles void elements. Void elements are required to have a start tag and must not have an end tag. See 'nonClosing'.
 tokensFromTree :: Tree Token -> [Token]
 tokensFromTree (Node o@(TagOpen n _) ts) | n `notElem` nonClosing
     = [o] <> tokensFromForest ts <> [TagClose n]
