@@ -1,5 +1,5 @@
 name:                html-parse
-version:             0.2.0.2
+version:             0.2.1.0
 synopsis:            A high-performance HTML tokenizer
 description:
     This package provides a fast and reasonably robust HTML5 tokenizer built
@@ -53,6 +53,7 @@ category:            Text
 build-type:          Simple
 cabal-version:       >=1.10
 tested-with:         GHC==7.10.* GHC==8.0.*, GHC==8.2.*, GHC==8.4.*, GHC==8.6.*, GHC==8.8.*, GHC==8.10.*, GHC==9.0.*, GHC==9.2.*, GHC==9.4.*
+extra-source-files:  changelog.md
 
 
 source-repository head
