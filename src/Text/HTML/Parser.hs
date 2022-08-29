@@ -412,8 +412,8 @@ renderAttrs = T.unwords . fmap renderAttr . reverse
 renderAttr :: Attr -> Text
 renderAttr (Attr k v) = mconcat [k, "=\"", v, "\""]
 
--- | Meld neighoring 'ContentChar' and 'ContentText' constructors together and drops empty text
--- elements.
+-- | Meld neighoring 'ContentChar' and 'ContentText'
+-- constructors together and drops empty text elements.
 canonicalizeTokens :: [Token] -> [Token]
 canonicalizeTokens = filter (/= ContentText "") . meldTextTokens
 
