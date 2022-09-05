@@ -92,6 +92,7 @@ test-suite spec
   main-is:             Spec.hs
   other-modules:       Text.HTML.ParserSpec, Text.HTML.TreeSpec
   ghc-options:         -Wall -with-rtsopts=-T
+  build-tool-depends:  hspec-discover:hspec-discover
   build-depends:       base,
                        containers,
                        hspec,
