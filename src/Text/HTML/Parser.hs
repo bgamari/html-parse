@@ -42,6 +42,9 @@ import Data.Text.Lazy.Builder (Builder)
 import qualified Data.Text.Lazy.Builder as B
 import Prelude hiding (take, takeWhile)
 
+import Text.HTML.Parser.Entities (entities)
+import qualified Data.Trie as Trie
+
 -- Section numbers refer to W3C HTML 5.2 specification.
 
 -- | A tag name (e.g. @body@)
@@ -90,10 +93,30 @@ token = dataState -- Start in the data state.
 -- | /§8.2.4.1/: Data state
 dataState :: Parser Token
 dataState = do
-    content <- takeWhile (/= '<')
+    content <- takeWhile (\c -> c /= '<' && c /= '&')
     if not $ T.null content
       then return $ ContentText content
-      else char '<' >> tagOpen
+      else choice
+        [ char '<' >> tagOpen
+        , try $ char '&' >> charRef
+        , ContentChar '&' <$ char '&'
+        ]
+
+charRef :: Parser Token
+charRef = go entityTrie
+  where
+    go :: Trie.Trie Char Token -> Parser Token
+    go trie = do
+      c <- anyChar
+      case c of
+        ';' -> maybe empty return (Trie.terminal trie)
+        _ -> go (Trie.step c trie)
+
+entityTrie :: Trie.Trie Char Token
+entityTrie = Trie.fromList
+    [ (T.unpack name, ContentText expansion)
+    | (name, expansion) <- entities
+    ]
 
 -- | /§8.2.4.6/: Tag open state
 tagOpen :: Parser Token
@@ -389,8 +412,8 @@ renderAttrs = T.unwords . fmap renderAttr . reverse
 renderAttr :: Attr -> Text
 renderAttr (Attr k v) = mconcat [k, "=\"", v, "\""]
 
--- | Meld neighoring 'ContentChar' and 'ContentText' constructors together and drops empty text
--- elements.
+-- | Meld neighoring 'ContentChar' and 'ContentText'
+-- constructors together and drops empty text elements.
 canonicalizeTokens :: [Token] -> [Token]
 canonicalizeTokens = filter (/= ContentText "") . meldTextTokens
 

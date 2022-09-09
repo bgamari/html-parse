@@ -14,6 +14,8 @@ module Text.HTML.Tree
 import           Data.Monoid
 import           Data.Text (Text)
 import           Data.Tree
+import           Prelude
+
 import           Text.HTML.Parser
 
 -- | construct a 'Forest' from a 'Token' list.
