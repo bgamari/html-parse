@@ -48,7 +48,7 @@ tokensToForest = f (PStack [] [])
 -- @ nonClosing = ["br", "hr", "img", "meta", "area", "base", "col", "embed", "input", "link", "param", "source", "track", "wbr"] @
 --
 -- <https:\/\/www.w3.org\/TR\/html52\/syntax.html#void-elements>
-nonClosing :: [Text]
+nonClosing :: [TagName]
 nonClosing = ["br", "hr", "img", "meta", "area", "base", "col", "embed", "input", "link", "param", "source", "track", "wbr"]
 
 data ParseTokenForestError =

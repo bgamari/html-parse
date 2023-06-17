@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
@@ -32,6 +33,9 @@ import Control.Applicative
 import Data.Monoid
 import Control.Monad (guard)
 import Control.DeepSeq
+#if CASE_INSENSITIVE
+import Data.CaseInsensitive (CI, mk, original)
+#endif
 
 import Data.Attoparsec.Text
 import qualified Data.Attoparsec.Text.Lazy as AL
@@ -48,7 +52,15 @@ import qualified Data.Trie as Trie
 -- Section numbers refer to W3C HTML 5.2 specification.
 
 -- | A tag name (e.g. @body@)
+#if CASE_INSENSITIVE
+type TagName   = CI Text
+#else
 type TagName   = Text
+original :: TagName -> Text
+original = id
+mk :: Text -> TagName
+mk = id
+#endif
 
 -- | An attribute name (e.g. @href@)
 type AttrName  = Text
@@ -170,8 +182,8 @@ tagNameClose = do
 -- | /§8.2.4.10/: Tag name state: common code
 --
 -- deviation: no lower-casing, don't handle NULL characters
-tagName' :: Parser Text
-tagName' = do
+tagName' :: Parser TagName
+tagName' = mk <$> do
     c <- peekChar'
     guard $ isAsciiUpper c || isAsciiLower c
     takeWhile $ not . (isWhitespace `orC` isC '/' `orC` isC '<' `orC` isC '>')
@@ -396,10 +408,10 @@ renderTokens = mconcat . fmap renderToken
 -- | (Somewhat) canonical string representation of 'Token'.
 renderToken :: Token -> TL.Text
 renderToken = TL.fromStrict . mconcat . \case
-    (TagOpen n [])         -> ["<", n, ">"]
-    (TagOpen n attrs)      -> ["<", n, " ", renderAttrs attrs, ">"]
-    (TagSelfClose n attrs) -> ["<", n, " ", renderAttrs attrs, " />"]
-    (TagClose n)           -> ["</", n, ">"]
+    (TagOpen n [])         -> ["<", original n, ">"]
+    (TagOpen n attrs)      -> ["<", original n, " ", renderAttrs attrs, ">"]
+    (TagSelfClose n attrs) -> ["<", original n, " ", renderAttrs attrs, " />"]
+    (TagClose n)           -> ["</", original n, ">"]
     (ContentChar c)        -> [T.singleton c]
     (ContentText t)        -> [t]
     (Comment builder)      -> ["<!--", TL.toStrict $ B.toLazyText builder, "-->"]

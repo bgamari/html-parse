@@ -55,6 +55,10 @@ cabal-version:       >=1.10
 tested-with:         GHC==8.4.*, GHC==8.6.*, GHC==8.8.*, GHC==8.10.*, GHC==9.0.*, GHC==9.2.*, GHC==9.4.*
 extra-source-files:  changelog.md
 
+flag case-insensitive
+  Description: Implement case insensitive HTML tags.
+  Default: True
+  Manual: True
 
 source-repository head
   type:                git
@@ -71,6 +75,9 @@ library
                        attoparsec >=0.13 && <0.15,
                        text >=1.2 && <2.1,
                        containers >=0.5 && <0.7
+  if flag(case-insensitive)
+    build-depends:     case-insensitive
+    cpp-options:       -DCASE_INSENSITIVE
   default-language:    Haskell2010
 
 benchmark bench
@@ -78,6 +85,7 @@ benchmark bench
   main-is:             Benchmark.hs
   other-extensions:    OverloadedStrings, DeriveGeneric
   build-depends:       base,
+                       bytestring,
                        deepseq,
                        attoparsec,
                        text,
