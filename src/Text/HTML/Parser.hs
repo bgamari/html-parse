@@ -139,6 +139,7 @@ isWhitespace :: Char -> Bool
 isWhitespace '\x09' = True
 isWhitespace '\x0a' = True
 isWhitespace '\x0c' = True
+isWhitespace '\x0d' = True
 isWhitespace ' '    = True
 isWhitespace _      = False
 
