@@ -84,6 +84,9 @@ benchmark bench
   type:                exitcode-stdio-1.0
   main-is:             Benchmark.hs
   other-extensions:    OverloadedStrings, DeriveGeneric
+  if flag(case-insensitive)
+    build-depends:     case-insensitive
+    cpp-options:       -DCASE_INSENSITIVE=1
   build-depends:       base,
                        bytestring,
                        deepseq,
@@ -100,6 +103,9 @@ test-suite spec
   main-is:             Spec.hs
   other-modules:       Text.HTML.ParserSpec, Text.HTML.TreeSpec
   ghc-options:         -Wall -with-rtsopts=-T
+  if flag(case-insensitive)
+    build-depends:     case-insensitive
+    cpp-options:       -DCASE_INSENSITIVE=1
   build-tool-depends:  hspec-discover:hspec-discover
   build-depends:       base,
                        containers,
