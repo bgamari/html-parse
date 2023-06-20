@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
@@ -20,6 +21,11 @@ import           Test.QuickCheck
 import           Test.QuickCheck.Instances ()
 import           Text.HTML.Parser
 
+#if CASE_INSENSITIVE
+import Data.CaseInsensitive
+#else
+mk = id
+#endif
 
 instance Arbitrary Token where
   arbitrary = oneof [validOpen, validClose, validFlat]
@@ -60,11 +66,11 @@ validXmlChar = elements (['\x20'..'\x7E'] \\ "\x09\x0a\x0c &/<>")
 validXmlText :: Gen T.Text
 validXmlText = T.pack <$> sized (`maxListOf` validXmlChar)
 
-validXmlTagName :: Gen T.Text
+validXmlTagName :: Gen TagName
 validXmlTagName = do
     initchar  <- elements $ ['a'..'z'] <> ['A'..'Z']
     thenchars <- sized (`maxListOf` elements (['\x20'..'\x7E'] \\ "\x09\x0a\x0c &/<>"))
-    pure . T.pack $ initchar : thenchars
+    pure . mk . T.pack $ initchar : thenchars
 
 validXmlAttrName :: Gen T.Text
 validXmlAttrName = do
