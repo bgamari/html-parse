@@ -107,7 +107,7 @@ test-suite spec
 -- For performance characterisation during optimisation
 executable html-parse-length
   main-is:             app/Main.hs
-  --buildable:           False
+  buildable:           False
   build-depends:       base,
                        html-parse,
                        text
