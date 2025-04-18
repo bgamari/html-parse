@@ -211,7 +211,7 @@ attrName tag attrs = do
 afterAttrName :: TagName -> [Attr] -> AttrName -> Parser Token
 afterAttrName tag attrs name = do
     skipWhile isWhitespace
-    id $  (char '/' >> selfClosingStartTag tag attrs)
+    id $  (char '/' >> selfClosingStartTag tag (Attr name T.empty : attrs))
       <|> (char '=' >> beforeAttrValue tag attrs name)
       <|> (char '>' >> return (TagOpen tag (Attr name T.empty : attrs)))
       <|> (endOfInput >> return endOfFileToken)
