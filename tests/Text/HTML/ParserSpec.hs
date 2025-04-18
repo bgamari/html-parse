@@ -85,6 +85,10 @@ validXmlCommentText = do
 maxListOf :: Int -> Gen a -> Gen [a]
 maxListOf n g = take n <$> listOf g
 
+parsesTo :: String -> [Token] -> Spec
+parsesTo str expected = do
+    it ("parses " <> str) $ do
+        parseTokens (T.pack str) `shouldBe` expected
 
 spec :: Spec
 spec = do
@@ -116,9 +120,7 @@ spec = do
       it "<foo .baz .bar >" $ do
         parseTokens "<foo .baz .bar >" `shouldBe` [TagOpen "foo" [Attr ".bar" "", Attr ".baz" ""]]
       -- traling whitespace after attributes in self-closing tag (#27)
-      it "<foo .baz .bar/>" $ do
-        parseTokens "<foo .baz .bar/>" `shouldBe` [TagSelfClose "foo" [Attr ".bar" "", Attr ".baz" ""]]
-      it "<foo .baz .bar />" $ do
-        parseTokens "<foo .baz .bar />" `shouldBe` [TagSelfClose "foo" [Attr ".bar" "", Attr ".baz" ""]]
+      "<foo .baz .bar/>" `parsesTo` [TagSelfClose "foo" [Attr ".bar" "", Attr ".baz" ""]]
+      "<foo .baz .bar />" `parsesTo` [TagSelfClose "foo" [Attr ".bar" "", Attr ".baz" ""]]
 
 
