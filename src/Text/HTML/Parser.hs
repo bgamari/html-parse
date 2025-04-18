@@ -203,6 +203,8 @@ attrName tag attrs = do
     name <- takeWhile $ not . (isWhitespace `orC` isC '/' `orC` isC '=' `orC` isC '>')
     id $  (endOfInput >> afterAttrName tag attrs name)
       <|> (char '=' >> beforeAttrValue tag attrs name)
+      <|> (satisfy isWhitespace >> afterAttrName tag attrs name)
+      -- N.B. '/' is handled by afterAttrName
       <|> try (do mc <- peekChar
                   case mc of
                     Just c | notNameChar c ->  afterAttrName tag attrs name
