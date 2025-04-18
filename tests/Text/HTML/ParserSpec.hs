@@ -85,6 +85,10 @@ validXmlCommentText = do
 maxListOf :: Int -> Gen a -> Gen [a]
 maxListOf n g = take n <$> listOf g
 
+parsesTo :: String -> [Token] -> Spec
+parsesTo str expected = do
+    it ("parses " <> str) $ do
+        parseTokens (T.pack str) `shouldBe` expected
 
 spec :: Spec
 spec = do
@@ -110,3 +114,16 @@ spec = do
         parseTokens "<!-- img src=\"/www_images/NCEP_GFS.gif\"><!- -------------------------------------------------------- >" `shouldBe` [Comment " img src=\"/www_images/NCEP_GFS.gif\"><!- -------------------------------------------------------- >"]
       it "parses entity" $ do
         parseTokens "&lt;" `shouldBe` [ContentText "<"]
+      -- traling whitespace after attributes
+      it "<foo .baz .bar>" $ do
+        parseTokens "<foo .baz .bar>" `shouldBe` [TagOpen "foo" [Attr ".bar" "", Attr ".baz" ""]]
+      it "<foo .baz .bar >" $ do
+        parseTokens "<foo .baz .bar >" `shouldBe` [TagOpen "foo" [Attr ".bar" "", Attr ".baz" ""]]
+      -- traling whitespace after attributes in self-closing tag (#27)
+      "<foo .baz .bar/>" `parsesTo` [TagSelfClose "foo" [Attr ".bar" "", Attr ".baz" ""]]
+      "<foo .baz .bar />" `parsesTo` [TagSelfClose "foo" [Attr ".bar" "", Attr ".baz" ""]]
+      -- #28
+      "<foo bar=\"baz\" foo='qux' a=b>" `parsesTo` [TagOpen "foo" [Attr "a" "b", Attr "foo" "qux", Attr "bar" "baz"]]
+      "<foo bar=baz foo=qux a=b >" `parsesTo` [TagOpen "foo" [Attr "a" "b", Attr "foo" "qux", Attr "bar" "baz"]]
+      "<foo bar=baz >" `parsesTo` [TagOpen "foo" [Attr "bar" "baz"]]
+      "<foo bar=baz>" `parsesTo` [TagOpen "foo" [Attr "bar" "baz"]]

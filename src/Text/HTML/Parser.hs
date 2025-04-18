@@ -3,6 +3,9 @@
 {-# LANGUAGE LambdaCase #-}
 
 {-# OPTIONS_GHC -O2 #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Redundant id" #-}
+{-# HLINT ignore "Redundant bracket" #-}
 
 -- | This is a performance-oriented HTML tokenizer aim at web-crawling
 -- applications. It follows the HTML5 parsing specification quite closely,
@@ -200,6 +203,8 @@ attrName tag attrs = do
     name <- takeWhile $ not . (isWhitespace `orC` isC '/' `orC` isC '=' `orC` isC '>')
     id $  (endOfInput >> afterAttrName tag attrs name)
       <|> (char '=' >> beforeAttrValue tag attrs name)
+      <|> (satisfy isWhitespace >> afterAttrName tag attrs name)
+      -- N.B. '/' is handled by afterAttrName
       <|> try (do mc <- peekChar
                   case mc of
                     Just c | notNameChar c ->  afterAttrName tag attrs name
@@ -211,7 +216,7 @@ attrName tag attrs = do
 afterAttrName :: TagName -> [Attr] -> AttrName -> Parser Token
 afterAttrName tag attrs name = do
     skipWhile isWhitespace
-    id $  (char '/' >> selfClosingStartTag tag attrs)
+    id $  (char '/' >> selfClosingStartTag tag (Attr name T.empty : attrs))
       <|> (char '=' >> beforeAttrValue tag attrs name)
       <|> (char '>' >> return (TagOpen tag (Attr name T.empty : attrs)))
       <|> (endOfInput >> return endOfFileToken)
@@ -244,7 +249,7 @@ attrValueSQuoted tag attrs name = do
 attrValueUnquoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueUnquoted tag attrs name = do
     value <- takeTill $ isWhitespace `orC` isC '>'
-    id $  (satisfy isWhitespace >> beforeAttrName tag attrs) -- unsure: don't emit?
+    id $  (satisfy isWhitespace >> beforeAttrName tag (Attr name value : attrs))
       <|> (char '>' >> return (TagOpen tag (Attr name value : attrs)))
       <|> (endOfInput >> return endOfFileToken)
 
