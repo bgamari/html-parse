@@ -249,7 +249,7 @@ attrValueSQuoted tag attrs name = do
 attrValueUnquoted :: TagName -> [Attr] -> AttrName -> Parser Token
 attrValueUnquoted tag attrs name = do
     value <- takeTill $ isWhitespace `orC` isC '>'
-    id $  (satisfy isWhitespace >> beforeAttrName tag attrs) -- unsure: don't emit?
+    id $  (satisfy isWhitespace >> beforeAttrName tag (Attr name value : attrs))
       <|> (char '>' >> return (TagOpen tag (Attr name value : attrs)))
       <|> (endOfInput >> return endOfFileToken)
 
