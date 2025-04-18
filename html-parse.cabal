@@ -65,7 +65,7 @@ extra-source-files:  changelog.md
 
 source-repository head
   type:                git
-  location:            git://github.com/bgamari/html-parse
+  location:            https://github.com/bgamari/html-parse
 
 library
   exposed-modules:     Text.HTML.Parser, Text.HTML.Tree
