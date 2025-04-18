@@ -3,6 +3,9 @@
 {-# LANGUAGE LambdaCase #-}
 
 {-# OPTIONS_GHC -O2 #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Redundant id" #-}
+{-# HLINT ignore "Redundant bracket" #-}
 
 -- | This is a performance-oriented HTML tokenizer aim at web-crawling
 -- applications. It follows the HTML5 parsing specification quite closely,
