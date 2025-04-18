@@ -122,5 +122,8 @@ spec = do
       -- traling whitespace after attributes in self-closing tag (#27)
       "<foo .baz .bar/>" `parsesTo` [TagSelfClose "foo" [Attr ".bar" "", Attr ".baz" ""]]
       "<foo .baz .bar />" `parsesTo` [TagSelfClose "foo" [Attr ".bar" "", Attr ".baz" ""]]
-
-
+      -- #28
+      "<foo bar=\"baz\" foo='qux' a=b>" `parsesTo` [TagOpen "foo" [Attr "a" "b", Attr "foo" "qux", Attr "bar" "baz"]]
+      "<foo bar=baz foo=qux a=b >" `parsesTo` [TagOpen "foo" [Attr "a" "b", Attr "foo" "qux", Attr "bar" "baz"]]
+      "<foo bar=baz >" `parsesTo` [TagOpen "foo" [Attr "bar" "baz"]]
+      "<foo bar=baz>" `parsesTo` [TagOpen "foo" [Attr "bar" "baz"]]
